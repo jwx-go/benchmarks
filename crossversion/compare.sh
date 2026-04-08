@@ -5,7 +5,6 @@ set -euo pipefail
 # Defaults
 COUNT=8
 BENCH="."
-TAGS=""
 TIMEOUT="30m"
 SHORT="-short"
 
@@ -17,7 +16,6 @@ usage() {
 	echo "Options:"
 	echo "  -count N        Number of benchmark iterations (default: 8)"
 	echo "  -bench PATTERN  Benchmark pattern to run (default: .)"
-	echo "  -tags TAGS      Build tags (e.g. jwx_goccy)"
 	echo "  -timeout DUR    Timeout duration (default: 30m, 60m with -full)"
 	echo "  -short          Run in short mode (skip slow benchmarks) [default]"
 	echo "  -full           Run all benchmarks including slow ones (disables -short, timeout 60m)"
@@ -33,10 +31,6 @@ while [ $# -gt 0 ]; do
 			;;
 		-bench)
 			BENCH="$2"
-			shift 2
-			;;
-		-tags)
-			TAGS="$2"
 			shift 2
 			;;
 		-timeout)
@@ -83,19 +77,12 @@ if ! command -v benchstat >/dev/null 2>&1; then
 	go install golang.org/x/perf/cmd/benchstat@latest
 fi
 
-# Build the flags.
-TAGS_FLAG=""
-if [ -n "$TAGS" ]; then
-	TAGS_FLAG="-tags $TAGS"
-fi
-
 RESULTS_DIR="$SCRIPT_DIR/results"
 mkdir -p "$RESULTS_DIR"
 
 echo "=== v3 vs v4 Benchmark Comparison ==="
 echo "  Count:   $COUNT"
 echo "  Bench:   $BENCH"
-echo "  Tags:    ${TAGS:-<none>}"
 echo "  Short:   ${SHORT:-no}"
 echo "  Timeout: $TIMEOUT"
 echo ""
@@ -103,20 +90,20 @@ echo "  v3 bench: $V3_BENCH"
 echo "  v4 bench: $V4_BENCH"
 echo ""
 
-# Disable go.work so each bench module uses its own go.mod replace directive.
+# Disable go.work so each bench module uses its own go.mod.
 export GOWORK=off
 
 # Run v3 benchmarks.
 echo "--- Running v3 benchmarks ---"
 # shellcheck disable=SC2086
-(cd "$V3_BENCH" && go test -run '^$' -bench "$BENCH" -benchmem -count "$COUNT" -timeout "$TIMEOUT" $TAGS_FLAG $SHORT) > "$RESULTS_DIR/v3.txt" 2>&1
+(cd "$V3_BENCH" && go test -run '^$' -bench "$BENCH" -benchmem -count "$COUNT" -timeout "$TIMEOUT" $SHORT) > "$RESULTS_DIR/v3.txt" 2>&1
 echo "  Saved to $RESULTS_DIR/v3.txt"
 
 # Run v4 benchmarks.
 # v4 uses encoding/json/v2 which requires the jsonv2 experiment.
 echo "--- Running v4 benchmarks ---"
 # shellcheck disable=SC2086
-(cd "$V4_BENCH" && GOEXPERIMENT=jsonv2 go test -run '^$' -bench "$BENCH" -benchmem -count "$COUNT" -timeout "$TIMEOUT" $TAGS_FLAG $SHORT) > "$RESULTS_DIR/v4.txt" 2>&1
+(cd "$V4_BENCH" && GOEXPERIMENT=jsonv2 go test -run '^$' -bench "$BENCH" -benchmem -count "$COUNT" -timeout "$TIMEOUT" $SHORT) > "$RESULTS_DIR/v4.txt" 2>&1
 echo "  Saved to $RESULTS_DIR/v4.txt"
 
 echo ""

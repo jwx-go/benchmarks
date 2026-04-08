@@ -1,0 +1,53 @@
+name: Performance Benchmarks
+
+on:
+  schedule:
+    - cron: '0 5 * * 1' # weekly, Monday 05:00 UTC
+  workflow_dispatch:
+    inputs:
+      bench:
+        description: 'Benchmark pattern'
+        required: false
+        default: '.'
+      count:
+        description: 'Number of iterations'
+        required: false
+        default: '5'
+
+permissions:
+  contents: read
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.x'
+
+      - name: Run benchmarks
+        working-directory: performance
+        run: |
+          BENCH="${{ inputs.bench || '.' }}"
+          COUNT="${{ inputs.count || '5' }}"
+          go test -run '^$' -bench "$BENCH" -benchmem -count "$COUNT" -timeout 60m \
+            | tee "$GITHUB_WORKSPACE/performance.txt"
+
+      - name: Generate summary
+        run: |
+          {
+            echo "## Performance Benchmarks"
+            echo ""
+            echo '```'
+            cat performance.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload raw results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: performance.txt

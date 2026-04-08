@@ -1,0 +1,81 @@
+name: Crossversion Benchmarks
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # weekly, Monday 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      bench:
+        description: 'Benchmark pattern (e.g. BenchmarkJWT, BenchmarkJWE)'
+        required: false
+        default: '.'
+      count:
+        description: 'Number of iterations'
+        required: false
+        default: '8'
+      full:
+        description: 'Run full benchmarks (disable -short)'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  crossversion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.x'
+
+      - name: Install benchstat
+        run: go install golang.org/x/perf/cmd/benchstat@latest
+
+      - name: Run v3 benchmarks
+        working-directory: crossversion/v3
+        env:
+          GOWORK: off
+        run: |
+          BENCH="${{ inputs.bench || '.' }}"
+          COUNT="${{ inputs.count || '8' }}"
+          SHORT="${{ inputs.full == 'true' && ' ' || '-short' }}"
+          TIMEOUT="${{ inputs.full == 'true' && '60m' || '30m' }}"
+          go test -run '^$' -bench "$BENCH" -benchmem -count "$COUNT" -timeout "$TIMEOUT" $SHORT \
+            | tee "$GITHUB_WORKSPACE/v3.txt"
+
+      - name: Run v4 benchmarks
+        working-directory: crossversion/v4
+        env:
+          GOWORK: off
+          GOEXPERIMENT: jsonv2
+        run: |
+          BENCH="${{ inputs.bench || '.' }}"
+          COUNT="${{ inputs.count || '8' }}"
+          SHORT="${{ inputs.full == 'true' && ' ' || '-short' }}"
+          TIMEOUT="${{ inputs.full == 'true' && '60m' || '30m' }}"
+          go test -run '^$' -bench "$BENCH" -benchmem -count "$COUNT" -timeout "$TIMEOUT" $SHORT \
+            | tee "$GITHUB_WORKSPACE/v4.txt"
+
+      - name: Compare with benchstat
+        run: |
+          RESULT=$(benchstat v3.txt v4.txt | sed 's|v3\.txt|v3|g; s|v4\.txt|v4|g')
+          {
+            echo "## Crossversion Benchmark: v3 vs v4"
+            echo ""
+            echo '```'
+            echo "$RESULT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload raw results
+        uses: actions/upload-artifact@v4
+        with:
+          name: crossversion-results
+          path: |
+            v3.txt
+            v4.txt

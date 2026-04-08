@@ -21,7 +21,4 @@ compare-jwe:
 compare-jwk:
 	./compare.sh -bench BenchmarkJWK
 
-compare-goccy:
-	./compare.sh -tags jwx_goccy
-
-.PHONY: compare compare-full compare-quick compare-jwt compare-jws compare-jwe compare-jwk compare-goccy
+.PHONY: compare compare-full compare-quick compare-jwt compare-jws compare-jwe compare-jwk
