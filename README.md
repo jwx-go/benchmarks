@@ -6,14 +6,14 @@ Benchmarks for [github.com/lestrrat-go/jwx](https://github.com/lestrrat-go/jwx).
 
 | Directory | Purpose |
 |-----------|---------|
-| `performance/` | Measures jwx operation performance (JWE, JWS, JWT, JWK) with different JSON backends |
+| `performance/` | Measures jwx operation performance (JWE, JWS, JWT, JWK) |
 | `comparison/` | Compares jwx against other JWT libraries (golang-jwt) |
 | `crossversion/` | Compares performance between jwx versions (v3 vs v4) |
 
 ## Running
 
 ```bash
-# Performance benchmarks (stdlib JSON)
+# Performance benchmarks
 make performance
 
 # Comparison against other libraries
@@ -31,8 +31,10 @@ To benchmark unreleased jwx code, add a replace directive to the relevant `go.mo
 
 ```bash
 cd performance
-go mod edit -replace github.com/lestrrat-go/jwx/v3=/path/to/your/jwx/checkout
+go mod edit -replace github.com/lestrrat-go/jwx/v3=/path/to/your/local/checkout
 go test -bench . -benchmem
 # When done:
 go mod edit -dropreplace github.com/lestrrat-go/jwx/v3
 ```
+
+The same approach works for v4 modules (substitute `v3` with `v4`).
