@@ -1,0 +1,46 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  golangci-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        suite: [jwx-v3, jwx-v4, golang-jwt, go-jose]
+        include:
+          - suite: jwx-v3
+            go-version: '1.25.x'
+            build-args: '-tags jwx_goccy'
+          - suite: jwx-v4
+            go-version: '1.26.x'
+            build-args: ''
+            goexperiment: jsonv2
+          - suite: golang-jwt
+            go-version: '1.25.x'
+            build-args: ''
+          - suite: go-jose
+            go-version: '1.25.x'
+            build-args: ''
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: latest
+          working-directory: suites/${{ matrix.suite }}
+          args: ${{ matrix.build-args }}
+        env:
+          GOWORK: 'off'
+          GOEXPERIMENT: ${{ matrix.goexperiment || '' }}
