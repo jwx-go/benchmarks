@@ -173,20 +173,16 @@ for cat in $categories; do
 
 	# Build header.
 	header="| Benchmark |"
-	subheader="| |"
 	separator="| --- |"
 	for s in "${available[@]}"; do
 		if [[ -n "$BASELINE" && "$s" == "$BASELINE" ]]; then
 			header="$header $s (baseline) |"
-			subheader="$subheader ns/op / B/op / allocs |"
 		else
 			header="$header $s |"
-			subheader="$subheader ns / mem / allocs |"
 		fi
 		separator="$separator ---: |"
 	done
 	echo "$header"
-	echo "$subheader"
 	echo "$separator"
 
 	# Build rows.
