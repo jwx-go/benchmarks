@@ -1,6 +1,9 @@
 package bench_test
 
 import (
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"testing"
@@ -12,12 +15,15 @@ import (
 var (
 	hmacKey    []byte
 	rsaKey     *rsa.PrivateKey
-	hsToken    string
-	rsToken    string
+	ecP256Key  *ecdsa.PrivateKey
+	ecP384Key  *ecdsa.PrivateKey
+	ecP521Key  *ecdsa.PrivateKey
+	edKey      ed25519.PrivateKey
+	edPubKey   ed25519.PublicKey
 )
 
 func init() {
-	hmacKey = make([]byte, 32)
+	hmacKey = make([]byte, 64) // 64 bytes covers HS256/384/512
 	if _, err := rand.Read(hmacKey); err != nil {
 		panic(err)
 	}
@@ -28,120 +34,128 @@ func init() {
 		panic(err)
 	}
 
-	claims := jwt.MapClaims{
+	ecP256Key, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	ecP384Key, err = ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	ecP521Key, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+
+	edPubKey, edKey, err = ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+}
+
+type algCase struct {
+	name   string
+	method jwt.SigningMethod
+	key    any
+	pubkey any
+}
+
+func algCases() []algCase {
+	return []algCase{
+		{"HS256", jwt.SigningMethodHS256, hmacKey, hmacKey},
+		{"HS384", jwt.SigningMethodHS384, hmacKey, hmacKey},
+		{"HS512", jwt.SigningMethodHS512, hmacKey, hmacKey},
+		{"RS256", jwt.SigningMethodRS256, rsaKey, &rsaKey.PublicKey},
+		{"RS384", jwt.SigningMethodRS384, rsaKey, &rsaKey.PublicKey},
+		{"RS512", jwt.SigningMethodRS512, rsaKey, &rsaKey.PublicKey},
+		{"PS256", jwt.SigningMethodPS256, rsaKey, &rsaKey.PublicKey},
+		{"PS384", jwt.SigningMethodPS384, rsaKey, &rsaKey.PublicKey},
+		{"PS512", jwt.SigningMethodPS512, rsaKey, &rsaKey.PublicKey},
+		{"ES256", jwt.SigningMethodES256, ecP256Key, &ecP256Key.PublicKey},
+		{"ES384", jwt.SigningMethodES384, ecP384Key, &ecP384Key.PublicKey},
+		{"ES512", jwt.SigningMethodES512, ecP521Key, &ecP521Key.PublicKey},
+		{"EdDSA", jwt.SigningMethodEdDSA, edKey, edPubKey},
+	}
+}
+
+func makeClaims() jwt.MapClaims {
+	return jwt.MapClaims{
 		"sub":  "1234567890",
 		"name": "John Doe",
 		"iat":  time.Now().Unix(),
 		"exp":  time.Now().Add(time.Hour).Unix(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	hsToken, err = token.SignedString(hmacKey)
-	if err != nil {
-		panic(err)
-	}
-
-	tokenRS := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	rsToken, err = tokenRS.SignedString(rsaKey)
-	if err != nil {
-		panic(err)
 	}
 }
 
 func BenchmarkJWT_Sign(b *testing.B) {
-	claims := jwt.MapClaims{
-		"sub":  "1234567890",
-		"name": "John Doe",
-		"iat":  time.Now().Unix(),
-		"exp":  time.Now().Add(time.Hour).Unix(),
+	claims := makeClaims()
+	for _, ac := range algCases() {
+		b.Run(ac.name, func(b *testing.B) {
+			token := jwt.NewWithClaims(ac.method, claims)
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_, err := token.SignedString(ac.key)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
 	}
-
-	b.Run("HS256", func(b *testing.B) {
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			_, err := token.SignedString(hmacKey)
-			if err != nil {
-				b.Fatal(err)
-			}
-		}
-	})
-
-	b.Run("RS256", func(b *testing.B) {
-		token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			_, err := token.SignedString(rsaKey)
-			if err != nil {
-				b.Fatal(err)
-			}
-		}
-	})
 }
 
 func BenchmarkJWT_Parse(b *testing.B) {
-	b.Run("HS256", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			token, err := jwt.Parse(hsToken, func(_ *jwt.Token) (any, error) {
-				return hmacKey, nil
-			})
-			if err != nil {
-				b.Fatal(err)
-			}
-			if !token.Valid {
-				b.Fatal("token is not valid")
-			}
+	claims := makeClaims()
+	for _, ac := range algCases() {
+		token := jwt.NewWithClaims(ac.method, claims)
+		signed, err := token.SignedString(ac.key)
+		if err != nil {
+			b.Fatal(err)
 		}
-	})
-
-	b.Run("RS256", func(b *testing.B) {
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			token, err := jwt.Parse(rsToken, func(_ *jwt.Token) (any, error) {
-				return &rsaKey.PublicKey, nil
-			})
-			if err != nil {
-				b.Fatal(err)
+		pubkey := ac.pubkey
+		b.Run(ac.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				t, err := jwt.Parse(signed, func(_ *jwt.Token) (any, error) {
+					return pubkey, nil
+				})
+				if err != nil {
+					b.Fatal(err)
+				}
+				if !t.Valid {
+					b.Fatal("token is not valid")
+				}
 			}
-			if !token.Valid {
-				b.Fatal("token is not valid")
-			}
-		}
-	})
+		})
+	}
 }
 
 func BenchmarkJWT_RoundTrip(b *testing.B) {
-	claims := jwt.MapClaims{
-		"sub":  "1234567890",
-		"name": "John Doe",
-		"iat":  time.Now().Unix(),
-		"exp":  time.Now().Add(time.Hour).Unix(),
+	claims := makeClaims()
+	for _, ac := range algCases() {
+		b.Run(ac.name, func(b *testing.B) {
+			token := jwt.NewWithClaims(ac.method, claims)
+			pubkey := ac.pubkey
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				tokenString, err := token.SignedString(ac.key)
+				if err != nil {
+					b.Fatal(err)
+				}
+				parsedToken, err := jwt.Parse(tokenString, func(_ *jwt.Token) (any, error) {
+					return pubkey, nil
+				})
+				if err != nil {
+					b.Fatal(err)
+				}
+				if !parsedToken.Valid {
+					b.Fatal("token is not valid")
+				}
+			}
+		})
 	}
-
-	b.Run("HS256", func(b *testing.B) {
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			tokenString, err := token.SignedString(hmacKey)
-			if err != nil {
-				b.Fatal(err)
-			}
-
-			parsedToken, err := jwt.Parse(tokenString, func(_ *jwt.Token) (any, error) {
-				return hmacKey, nil
-			})
-			if err != nil {
-				b.Fatal(err)
-			}
-			if !parsedToken.Valid {
-				b.Fatal("token is not valid")
-			}
-		}
-	})
 }
