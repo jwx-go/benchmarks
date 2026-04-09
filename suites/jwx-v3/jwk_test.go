@@ -3,7 +3,11 @@ package bench_test
 import (
 	"bytes"
 	"crypto/ecdh"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"encoding/json"
 	"testing"
 
@@ -213,6 +217,114 @@ func BenchmarkJWK_Marshal_OKP(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				_, err := json.Marshal(k.key)
 				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkJWK_Import(b *testing.B) {
+	rsaRaw, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	ecRaw, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	symRaw := make([]byte, 64)
+	if _, err := rand.Read(symRaw); err != nil {
+		b.Fatal(err)
+	}
+
+	_, edRaw, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	cases := []struct {
+		name string
+		raw  any
+	}{
+		{"RSA_PrivateKey", rsaRaw},
+		{"RSA_PublicKey", &rsaRaw.PublicKey},
+		{"EC_PrivateKey", ecRaw},
+		{"EC_PublicKey", &ecRaw.PublicKey},
+		{"Symmetric", symRaw},
+		{"Ed25519_PrivateKey", edRaw},
+		{"Ed25519_PublicKey", edRaw.Public()},
+	}
+
+	for _, c := range cases {
+		b.Run(c.name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, err := jwk.Import(c.raw)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkJWK_Export(b *testing.B) {
+	rsaKey, err := generateRsaJwk()
+	if err != nil {
+		b.Fatal(err)
+	}
+	rsaPubKey, err := jwk.PublicKeyOf(rsaKey)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	ecKey, err := generateEcdsaJwk()
+	if err != nil {
+		b.Fatal(err)
+	}
+	ecPubKey, err := jwk.PublicKeyOf(ecKey)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	symKey, err := generateSymmetricJwk()
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	edKey, err := generateEd25519Jwk()
+	if err != nil {
+		b.Fatal(err)
+	}
+	edPubKey, err := jwk.PublicKeyOf(edKey)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	cases := []struct {
+		name string
+		key  jwk.Key
+	}{
+		{"RSA_PrivateKey", rsaKey},
+		{"RSA_PublicKey", rsaPubKey},
+		{"EC_PrivateKey", ecKey},
+		{"EC_PublicKey", ecPubKey},
+		{"Symmetric", symKey},
+		{"Ed25519_PrivateKey", edKey},
+		{"Ed25519_PublicKey", edPubKey},
+	}
+
+	for _, c := range cases {
+		var dst any
+		b.Run(c.name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				if err := jwk.Export(c.key, &dst); err != nil {
 					b.Fatal(err)
 				}
 			}
