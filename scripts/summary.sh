@@ -3,11 +3,13 @@
 # Generates a markdown summary comparing benchmark results across suites.
 # Reads raw go test -bench output from results/<suite>.txt files.
 #
-# Usage: ./scripts/summary.sh [results-dir]
+# Usage: ./scripts/summary.sh [results-dir] [baseline-suite]
+# Env:   BASELINE=<suite-name> overrides auto-detection
 
 set -euo pipefail
 
 RESULTS_DIR="${1:-results}"
+BASELINE="${BASELINE:-${2:-}}"
 SUITES=(jwx-v3 jwx-v4 golang-jwt go-jose)
 
 # Collect available suites.
@@ -21,6 +23,21 @@ done
 if [[ ${#available[@]} -eq 0 ]]; then
 	echo "No result files found in $RESULTS_DIR" >&2
 	exit 1
+fi
+
+# Auto-detect baseline: prefer jwx-v4, fall back to jwx-v3.
+if [[ -z "$BASELINE" ]]; then
+	if [[ -f "$RESULTS_DIR/jwx-v4.txt" ]]; then
+		BASELINE="jwx-v4"
+	elif [[ -f "$RESULTS_DIR/jwx-v3.txt" ]]; then
+		BASELINE="jwx-v3"
+	fi
+fi
+
+# Validate baseline.
+if [[ -n "$BASELINE" && ! -f "$RESULTS_DIR/$BASELINE.txt" ]]; then
+	echo "Warning: baseline '$BASELINE' has no result file, skipping deltas" >&2
+	BASELINE=""
 fi
 
 # Parse benchmark results: extract median ns/op and B/op for each benchmark.
@@ -107,6 +124,20 @@ format_bytes() {
 	}'
 }
 
+# Format percentage delta between current and baseline values.
+format_pct() {
+	awk -v cur="$1" -v base="$2" 'BEGIN {
+		c = cur + 0
+		b = base + 0
+		if (b == 0 || c == 0) { print ""; exit }
+		pct = ((c - b) / b) * 100
+		if (pct > 0) sign = "+"
+		else sign = ""
+		if (int(pct) == pct) printf " (%s%d%%)", sign, pct
+		else printf " (%s%.1f%%)", sign, pct
+	}'
+}
+
 # Parse all suites into temp files.
 tmpdir=$(mktemp -d)
 trap 'rm -rf "$tmpdir"' EXIT
@@ -118,6 +149,12 @@ for s in "${available[@]}"; do
 	all_benchmarks="$all_benchmarks$(cut -f1 "$tmpdir/$s.tsv")
 "
 done
+
+# Resolve baseline data file.
+baseline_file=""
+if [[ -n "$BASELINE" ]]; then
+	baseline_file="$tmpdir/$BASELINE.tsv"
+fi
 
 # Get unique sorted benchmark names.
 sorted_benchmarks=$(echo "$all_benchmarks" | sort -u | grep -v '^$')
@@ -138,7 +175,11 @@ for cat in $categories; do
 	header="| Benchmark |"
 	separator="| --- |"
 	for s in "${available[@]}"; do
-		header="$header $s |"
+		if [[ -n "$BASELINE" && "$s" == "$BASELINE" ]]; then
+			header="$header $s (baseline) |"
+		else
+			header="$header $s |"
+		fi
 		separator="$separator ---: |"
 	done
 	echo "$header"
@@ -155,7 +196,22 @@ for cat in $categories; do
 				allocsop=$(echo "$val" | cut -f4)
 				formatted_ns=$(format_ns "$nsop")
 				formatted_b=$(format_bytes "$bop")
-				row="$row ${formatted_ns} (${formatted_b}, ${allocsop}a) |"
+				if [[ -n "$baseline_file" && "$s" != "$BASELINE" ]]; then
+					base_val=$(grep "^${bench}	" "$baseline_file" 2>/dev/null || true)
+					if [[ -n "$base_val" ]]; then
+						base_nsop=$(echo "$base_val" | cut -f2)
+						base_bop=$(echo "$base_val" | cut -f3)
+						base_allocsop=$(echo "$base_val" | cut -f4)
+						ns_delta=$(format_pct "$nsop" "$base_nsop")
+						b_delta=$(format_pct "$bop" "$base_bop")
+						a_delta=$(format_pct "$allocsop" "$base_allocsop")
+						row="$row ${formatted_ns}${ns_delta} (${formatted_b}${b_delta}, ${allocsop}a${a_delta}) |"
+					else
+						row="$row ${formatted_ns} (${formatted_b}, ${allocsop}a) |"
+					fi
+				else
+					row="$row ${formatted_ns} (${formatted_b}, ${allocsop}a) |"
+				fi
 			else
 				row="$row — |"
 			fi

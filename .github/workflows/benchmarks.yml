@@ -36,6 +36,10 @@ on:
         type: boolean
         required: false
         default: true
+      baseline:
+        description: 'Baseline suite for percentage deltas (auto-detects if empty)'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -128,7 +132,7 @@ jobs:
           {
             echo "## Benchmark Results (${{ inputs.mode || 'compare' }} mode)"
             echo ""
-            ./scripts/summary.sh
+            BASELINE="${{ inputs.baseline }}" ./scripts/summary.sh
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload results

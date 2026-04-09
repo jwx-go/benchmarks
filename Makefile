@@ -1,4 +1,4 @@
-.PHONY: quick compare full bench run-suite compare-results
+.PHONY: quick compare full bench run-suite compare-results summary
 
 SUITES     := jwx-v3 jwx-v4 golang-jwt go-jose
 RESULTS    := results
@@ -9,6 +9,7 @@ BENCH      ?= .
 COUNT      ?= 8
 TAGS       ?=
 SHORT      ?= -short
+BASELINE   ?=
 
 # --- Rigid modes ---
 
@@ -63,3 +64,6 @@ run-suite:
 
 compare-results:
 	@./scripts/compare.sh
+
+summary:
+	@BASELINE="$(BASELINE)" ./scripts/summary.sh
