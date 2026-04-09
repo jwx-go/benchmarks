@@ -123,15 +123,12 @@ jobs:
             echo "  Saved results/$suite.txt"
           done
 
-      - name: Compare with benchstat
+      - name: Generate summary
         run: |
-          RESULT=$(./scripts/compare.sh)
           {
             echo "## Benchmark Results (${{ inputs.mode || 'compare' }} mode)"
             echo ""
-            echo '```'
-            echo "$RESULT"
-            echo '```'
+            ./scripts/summary.sh
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload results
