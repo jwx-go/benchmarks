@@ -138,6 +138,26 @@ func BenchmarkJWT_Verify(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
+				_, err := jwt.Parse(signed, jwt.WithKey(ac.alg, ac.pubkey), jwt.WithValidate(false))
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkJWT_VerifyValidate(b *testing.B) {
+	tok := makeJwtToken()
+	for _, ac := range jwtAlgCases(b) {
+		signed, err := jwt.Sign(tok, jwt.WithKey(ac.alg, ac.key))
+		if err != nil {
+			b.Fatal(err)
+		}
+		b.Run(ac.name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
 				_, err := jwt.Parse(signed, jwt.WithKey(ac.alg, ac.pubkey))
 				if err != nil {
 					b.Fatal(err)

@@ -134,6 +134,31 @@ func BenchmarkJWT_Parse(b *testing.B) {
 }
 
 func BenchmarkJWT_Verify(b *testing.B) {
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+	claims := makeClaims()
+	for _, ac := range algCases() {
+		token := jwt.NewWithClaims(ac.method, claims)
+		signed, err := token.SignedString(ac.key)
+		if err != nil {
+			b.Fatal(err)
+		}
+		pubkey := ac.pubkey
+		b.Run(ac.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_, err := parser.Parse(signed, func(_ *jwt.Token) (any, error) {
+					return pubkey, nil
+				})
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkJWT_VerifyValidate(b *testing.B) {
 	claims := makeClaims()
 	for _, ac := range algCases() {
 		token := jwt.NewWithClaims(ac.method, claims)
