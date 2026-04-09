@@ -100,21 +100,21 @@ jobs:
             echo "--- Running $suite ---"
 
             tags=""
-            goexperiment=""
+            export GOEXPERIMENT=""
             if [ "$suite" = "jwx-v3" ]; then
               tags="jwx_goccy"
               if [ -n "${{ steps.params.outputs.tags }}" ]; then
                 tags="${tags},${{ steps.params.outputs.tags }}"
               fi
             elif [ "$suite" = "jwx-v4" ]; then
-              goexperiment="GOEXPERIMENT=jsonv2"
+              export GOEXPERIMENT=jsonv2
               tags="${{ steps.params.outputs.tags }}"
             fi
 
             tagflag=""
             if [ -n "$tags" ]; then tagflag="-tags $tags"; fi
 
-            GOWORK=off $goexperiment go test -C "suites/$suite" \
+            GOWORK=off go test -C "suites/$suite" \
               -run '^$' -bench "${{ steps.params.outputs.bench }}" -benchmem \
               -count "${{ steps.params.outputs.count }}" -timeout 60m \
               ${{ steps.params.outputs.short }} $tagflag \

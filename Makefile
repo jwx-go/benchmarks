@@ -44,17 +44,17 @@ run-suite:
 	@for suite in $(SUITE); do \
 		echo "--- Running $$suite ---"; \
 		tags=""; \
-		goexperiment=""; \
+		export GOEXPERIMENT=""; \
 		if [ "$$suite" = "jwx-v3" ]; then \
 			tags="jwx_goccy"; \
 			if [ -n "$(TAGS)" ]; then tags="$$tags,$(TAGS)"; fi; \
 		elif [ "$$suite" = "jwx-v4" ]; then \
-			goexperiment="GOEXPERIMENT=jsonv2"; \
+			export GOEXPERIMENT=jsonv2; \
 			if [ -n "$(TAGS)" ]; then tags="$(TAGS)"; fi; \
 		fi; \
 		tagflag=""; \
 		if [ -n "$$tags" ]; then tagflag="-tags $$tags"; fi; \
-		GOWORK=off $$goexperiment go test -C suites/$$suite \
+		GOWORK=off go test -C suites/$$suite \
 			-run '^$$' -bench "$(BENCH)" -benchmem \
 			-count $(COUNT) -timeout 60m $(SHORT) \
 			$$tagflag > $(RESULTS)/$$suite.txt 2>&1 || exit 1; \
