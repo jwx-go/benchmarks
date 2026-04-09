@@ -84,10 +84,10 @@ func jwtAlgCases(b *testing.B) []jwtAlgCase {
 func makeJwtToken() jwt.Token {
 	now := time.Now()
 	tok := jwt.New()
-	tok.Set(jwt.SubjectKey, "1234567890")
-	tok.Set("name", "John Doe")
-	tok.Set(jwt.IssuedAtKey, now.Unix())
-	tok.Set(jwt.ExpirationKey, now.Add(time.Hour).Unix())
+	_ = tok.Set(jwt.SubjectKey, "1234567890")
+	_ = tok.Set("name", "John Doe")
+	_ = tok.Set(jwt.IssuedAtKey, now.Unix())
+	_ = tok.Set(jwt.ExpirationKey, now.Add(time.Hour).Unix())
 	return tok
 }
 
@@ -180,8 +180,8 @@ func BenchmarkJWT_Serialization(b *testing.B) {
 	}
 
 	t1 := jwt.New()
-	t1.Set(jwt.IssuedAtKey, time.Now().Unix())
-	t1.Set(jwt.ExpirationKey, time.Now().Add(time.Hour).Unix())
+	_ = t1.Set(jwt.IssuedAtKey, time.Now().Unix())
+	_ = t1.Set(jwt.ExpirationKey, time.Now().Add(time.Hour).Unix())
 
 	b.Run("Compact", func(b *testing.B) {
 		testcases := []Case{

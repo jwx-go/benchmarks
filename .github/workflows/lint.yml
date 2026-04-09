@@ -12,6 +12,7 @@ jobs:
   golangci-lint:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         suite: [jwx-v3, jwx-v4, golang-jwt, go-jose]
         include:

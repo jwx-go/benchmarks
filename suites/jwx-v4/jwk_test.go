@@ -223,7 +223,7 @@ func BenchmarkJWK_Marshal_OKP(b *testing.B) {
 func runJSONBench(b *testing.B, privkey jwk.Key) {
 	b.Helper()
 
-	privkey.Set("mykey", "1234567890")
+	_ = privkey.Set("mykey", "1234567890")
 	pubkey, err := jwk.PublicKeyOf(privkey)
 	if err != nil {
 		b.Fatal(err)
