@@ -129,12 +129,12 @@ format_pct() {
 	awk -v cur="$1" -v base="$2" 'BEGIN {
 		c = cur + 0
 		b = base + 0
-		if (b == 0 || c == 0) { print ""; exit }
+		if (b == 0 || c == 0) { print "—"; exit }
 		pct = ((c - b) / b) * 100
 		if (pct > 0) sign = "+"
 		else sign = ""
-		if (int(pct) == pct) printf " (%s%d%%)", sign, pct
-		else printf " (%s%.1f%%)", sign, pct
+		if (int(pct) == pct) printf "%s%d%%", sign, pct
+		else printf "%s%.1f%%", sign, pct
 	}'
 }
 
@@ -173,16 +173,20 @@ for cat in $categories; do
 
 	# Build header.
 	header="| Benchmark |"
+	subheader="| |"
 	separator="| --- |"
 	for s in "${available[@]}"; do
 		if [[ -n "$BASELINE" && "$s" == "$BASELINE" ]]; then
 			header="$header $s (baseline) |"
+			subheader="$subheader ns/op / B/op / allocs |"
 		else
 			header="$header $s |"
+			subheader="$subheader ns / mem / allocs |"
 		fi
 		separator="$separator ---: |"
 	done
 	echo "$header"
+	echo "$subheader"
 	echo "$separator"
 
 	# Build rows.
@@ -194,8 +198,6 @@ for cat in $categories; do
 				nsop=$(echo "$val" | cut -f2)
 				bop=$(echo "$val" | cut -f3)
 				allocsop=$(echo "$val" | cut -f4)
-				formatted_ns=$(format_ns "$nsop")
-				formatted_b=$(format_bytes "$bop")
 				if [[ -n "$baseline_file" && "$s" != "$BASELINE" ]]; then
 					base_val=$(grep "^${bench}	" "$baseline_file" 2>/dev/null || true)
 					if [[ -n "$base_val" ]]; then
@@ -205,12 +207,14 @@ for cat in $categories; do
 						ns_delta=$(format_pct "$nsop" "$base_nsop")
 						b_delta=$(format_pct "$bop" "$base_bop")
 						a_delta=$(format_pct "$allocsop" "$base_allocsop")
-						row="$row ${formatted_ns}${ns_delta} (${formatted_b}${b_delta}, ${allocsop}a${a_delta}) |"
+						row="$row ${ns_delta} / ${b_delta} / ${a_delta} |"
 					else
-						row="$row ${formatted_ns} (${formatted_b}, ${allocsop}a) |"
+						row="$row — |"
 					fi
 				else
-					row="$row ${formatted_ns} (${formatted_b}, ${allocsop}a) |"
+					formatted_ns=$(format_ns "$nsop")
+					formatted_b=$(format_bytes "$bop")
+					row="$row ${formatted_ns} / ${formatted_b} / ${allocsop}a |"
 				fi
 			else
 				row="$row — |"
