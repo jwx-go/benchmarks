@@ -360,8 +360,6 @@ func BenchmarkJWE_Serialization(b *testing.B) {
 	m, _ := jwe.Parse([]byte(s))
 	js, _ := json.Marshal(m)
 
-	var v any
-
 	b.Run("JSON_Marshal", func(b *testing.B) {
 		testcases := []Case{
 			{
@@ -374,7 +372,8 @@ func BenchmarkJWE_Serialization(b *testing.B) {
 			{
 				Name: "json.Unmarshal",
 				Test: func(b *testing.B) error {
-					return json.Unmarshal(js, &v)
+					msg := jwe.NewMessage()
+					return json.Unmarshal(js, msg)
 				},
 			},
 		}

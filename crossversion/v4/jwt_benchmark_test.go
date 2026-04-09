@@ -139,7 +139,6 @@ func BenchmarkJWT(b *testing.B) {
 			}
 		})
 		b.Run("JSON", func(b *testing.B) {
-			var v any
 			testcases := []Case{
 				{
 					Name:      "jwt.ParseString",
@@ -171,7 +170,8 @@ func BenchmarkJWT(b *testing.B) {
 				{
 					Name: "json.Unmarshal",
 					Test: func(b *testing.B) error {
-						return json.Unmarshal(jsonBuf, &v)
+						tok := jwt.New()
+						return json.Unmarshal(jsonBuf, tok)
 					},
 				},
 			}
