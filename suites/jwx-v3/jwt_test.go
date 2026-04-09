@@ -121,10 +121,23 @@ func BenchmarkJWT_Parse(b *testing.B) {
 	})
 }
 
-func BenchmarkJWT_RoundTrip(b *testing.B) {
+func BenchmarkJWT_Verify(b *testing.B) {
 	hmacRaw := make([]byte, 32)
 	rand.Read(hmacRaw)
 	hmacKey, err := jwk.Import(hmacRaw)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	rsaRaw, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		b.Fatal(err)
+	}
+	rsaKey, err := jwk.Import(rsaRaw)
+	if err != nil {
+		b.Fatal(err)
+	}
+	rsaPubKey, err := jwk.PublicKeyOf(rsaKey)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -136,15 +149,31 @@ func BenchmarkJWT_RoundTrip(b *testing.B) {
 	tok.Set(jwt.IssuedAtKey, now.Unix())
 	tok.Set(jwt.ExpirationKey, now.Add(time.Hour).Unix())
 
+	hmacSigned, err := jwt.Sign(tok, jwt.WithKey(jwa.HS256(), hmacKey))
+	if err != nil {
+		b.Fatal(err)
+	}
+	rsaSigned, err := jwt.Sign(tok, jwt.WithKey(jwa.RS256(), rsaKey))
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	b.Run("HS256", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			signed, err := jwt.Sign(tok, jwt.WithKey(jwa.HS256(), hmacKey))
+			_, err := jwt.Parse(hmacSigned, jwt.WithKey(jwa.HS256(), hmacKey))
 			if err != nil {
 				b.Fatal(err)
 			}
-			_, err = jwt.Parse(signed, jwt.WithKey(jwa.HS256(), hmacKey))
+		}
+	})
+
+	b.Run("RS256", func(b *testing.B) {
+		b.ResetTimer()
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			_, err := jwt.Parse(rsaSigned, jwt.WithKey(jwa.RS256(), rsaPubKey))
 			if err != nil {
 				b.Fatal(err)
 			}

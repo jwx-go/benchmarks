@@ -133,26 +133,26 @@ func BenchmarkJWT_Parse(b *testing.B) {
 	}
 }
 
-func BenchmarkJWT_RoundTrip(b *testing.B) {
+func BenchmarkJWT_Verify(b *testing.B) {
 	claims := makeClaims()
 	for _, ac := range algCases() {
+		token := jwt.NewWithClaims(ac.method, claims)
+		signed, err := token.SignedString(ac.key)
+		if err != nil {
+			b.Fatal(err)
+		}
+		pubkey := ac.pubkey
 		b.Run(ac.name, func(b *testing.B) {
-			token := jwt.NewWithClaims(ac.method, claims)
-			pubkey := ac.pubkey
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				tokenString, err := token.SignedString(ac.key)
-				if err != nil {
-					b.Fatal(err)
-				}
-				parsedToken, err := jwt.Parse(tokenString, func(_ *jwt.Token) (any, error) {
+				t, err := jwt.Parse(signed, func(_ *jwt.Token) (any, error) {
 					return pubkey, nil
 				})
 				if err != nil {
 					b.Fatal(err)
 				}
-				if !parsedToken.Valid {
+				if !t.Valid {
 					b.Fatal("token is not valid")
 				}
 			}
