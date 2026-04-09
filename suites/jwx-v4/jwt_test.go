@@ -71,11 +71,12 @@ func makeJwtToken() jwt.Token {
 func BenchmarkJWT_Sign(b *testing.B) {
 	tok := makeJwtToken()
 	for _, ac := range jwtAlgCases(b) {
+		withKey := jwt.WithKey(ac.alg, ac.key)
 		b.Run(ac.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwt.Sign(tok, jwt.WithKey(ac.alg, ac.key))
+				_, err := jwt.Sign(tok, withKey)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -91,11 +92,12 @@ func BenchmarkJWT_Parse(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
+		withKey := jwt.WithKey(ac.alg, ac.pubkey)
 		b.Run(ac.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwt.Parse(signed, jwt.WithKey(ac.alg, ac.pubkey))
+				_, err := jwt.Parse(signed, withKey)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -111,11 +113,13 @@ func BenchmarkJWT_Verify(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
+		withKey := jwt.WithKey(ac.alg, ac.pubkey)
+		noValidate := jwt.WithValidate(false)
 		b.Run(ac.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwt.Parse(signed, jwt.WithKey(ac.alg, ac.pubkey), jwt.WithValidate(false))
+				_, err := jwt.Parse(signed, withKey, noValidate)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -131,11 +135,12 @@ func BenchmarkJWT_VerifyValidate(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
+		withKey := jwt.WithKey(ac.alg, ac.pubkey)
 		b.Run(ac.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwt.Parse(signed, jwt.WithKey(ac.alg, ac.pubkey))
+				_, err := jwt.Parse(signed, withKey)
 				if err != nil {
 					b.Fatal(err)
 				}

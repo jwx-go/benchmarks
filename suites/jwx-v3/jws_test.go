@@ -30,11 +30,15 @@ func BenchmarkJWS_Sign(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	withHmac := jws.WithKey(jwa.HS256(), hmacKey)
+	withRsa := jws.WithKey(jwa.RS256(), rsaKey)
+	withEc := jws.WithKey(jwa.ES256(), ecKey)
+
 	b.Run("HS256", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			_, err := jws.Sign(payload, jws.WithKey(jwa.HS256(), hmacKey))
+			_, err := jws.Sign(payload, withHmac)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -45,7 +49,7 @@ func BenchmarkJWS_Sign(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			_, err := jws.Sign(payload, jws.WithKey(jwa.RS256(), rsaKey))
+			_, err := jws.Sign(payload, withRsa)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -56,7 +60,7 @@ func BenchmarkJWS_Sign(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			_, err := jws.Sign(payload, jws.WithKey(jwa.ES256(), ecKey))
+			_, err := jws.Sign(payload, withEc)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -93,11 +97,15 @@ func BenchmarkJWS_Verify(b *testing.B) {
 		b.Fatal(err)
 	}
 
+	withHmacVerify := jws.WithKey(jwa.HS256(), hmacKey)
+	withRsaVerify := jws.WithKey(jwa.RS256(), &rsaKey.PublicKey)
+	withEcVerify := jws.WithKey(jwa.ES256(), &ecKey.PublicKey)
+
 	b.Run("HS256", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			_, err := jws.Verify(hmacSigned, jws.WithKey(jwa.HS256(), hmacKey))
+			_, err := jws.Verify(hmacSigned, withHmacVerify)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -108,7 +116,7 @@ func BenchmarkJWS_Verify(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			_, err := jws.Verify(rsaSigned, jws.WithKey(jwa.RS256(), &rsaKey.PublicKey))
+			_, err := jws.Verify(rsaSigned, withRsaVerify)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -119,7 +127,7 @@ func BenchmarkJWS_Verify(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
-			_, err := jws.Verify(ecSigned, jws.WithKey(jwa.ES256(), &ecKey.PublicKey))
+			_, err := jws.Verify(ecSigned, withEcVerify)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -175,11 +183,12 @@ func BenchmarkJWS_Sign_All(b *testing.B) {
 	}
 
 	for _, tc := range testcases {
+		withKey := jws.WithKey(tc.alg, tc.key)
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jws.Sign(payload, jws.WithKey(tc.alg, tc.key))
+				_, err := jws.Sign(payload, withKey)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -242,11 +251,12 @@ func BenchmarkJWS_Verify_All(b *testing.B) {
 			b.Fatal(err)
 		}
 
+		withKey := jws.WithKey(tc.alg, tc.verifyKey)
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jws.Verify(signed, jws.WithKey(tc.alg, tc.verifyKey))
+				_, err := jws.Verify(signed, withKey)
 				if err != nil {
 					b.Fatal(err)
 				}

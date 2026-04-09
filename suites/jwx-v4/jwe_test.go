@@ -83,14 +83,13 @@ func BenchmarkJWE_Encrypt(b *testing.B) {
 	}
 
 	for _, tc := range testcases {
+		withKey := jwe.WithKey(tc.alg, tc.key)
+		withEnc := jwe.WithContentEncryption(tc.enc)
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwe.Encrypt(payload,
-					jwe.WithKey(tc.alg, tc.key),
-					jwe.WithContentEncryption(tc.enc),
-				)
+				_, err := jwe.Encrypt(payload, withKey, withEnc)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -172,10 +171,11 @@ func BenchmarkJWE_Decrypt(b *testing.B) {
 				b.Fatal(err)
 			}
 
+			withKey := jwe.WithKey(tc.alg, tc.decKey)
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwe.Decrypt(encrypted, jwe.WithKey(tc.alg, tc.decKey))
+				_, err := jwe.Decrypt(encrypted, withKey)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -220,14 +220,13 @@ func BenchmarkJWE_Encrypt_All(b *testing.B) {
 	}
 
 	for _, tc := range testcases {
+		withKey := jwe.WithKey(tc.alg, tc.key)
+		withEnc := jwe.WithContentEncryption(tc.enc)
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwe.Encrypt(payload,
-					jwe.WithKey(tc.alg, tc.key),
-					jwe.WithContentEncryption(tc.enc),
-				)
+				_, err := jwe.Encrypt(payload, withKey, withEnc)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -281,11 +280,12 @@ func BenchmarkJWE_Decrypt_All(b *testing.B) {
 			b.Fatal(err)
 		}
 
+		withKey := jwe.WithKey(tc.alg, tc.decKey)
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwe.Decrypt(encrypted, jwe.WithKey(tc.alg, tc.decKey))
+				_, err := jwe.Decrypt(encrypted, withKey)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -332,21 +332,21 @@ func BenchmarkJWE_RoundTrip(b *testing.B) {
 	}
 
 	for _, tc := range testcases {
+		withEncKey := jwe.WithKey(tc.alg, tc.encKey)
+		withEnc := jwe.WithContentEncryption(tc.enc)
+		withDecKey := jwe.WithKey(tc.alg, tc.decKey)
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
 				// Encrypt
-				encrypted, err := jwe.Encrypt(payload,
-					jwe.WithKey(tc.alg, tc.encKey),
-					jwe.WithContentEncryption(tc.enc),
-				)
+				encrypted, err := jwe.Encrypt(payload, withEncKey, withEnc)
 				if err != nil {
 					b.Fatal(err)
 				}
 
 				// Decrypt
-				decrypted, err := jwe.Decrypt(encrypted, jwe.WithKey(tc.alg, tc.decKey))
+				decrypted, err := jwe.Decrypt(encrypted, withDecKey)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -376,6 +376,10 @@ func BenchmarkJWE_PayloadSizes(b *testing.B) {
 		{"1MB", 1024 * 1024},
 	}
 
+	withEncKey := jwe.WithKey(jwa.RSA_OAEP(), &rsaKey.PublicKey)
+	withEnc := jwe.WithContentEncryption(jwa.A256GCM())
+	withDecKey := jwe.WithKey(jwa.RSA_OAEP(), rsaKey)
+
 	for _, ps := range payloadSizes {
 		payload := make([]byte, ps.size)
 		rand.Read(payload)
@@ -384,10 +388,7 @@ func BenchmarkJWE_PayloadSizes(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwe.Encrypt(payload,
-					jwe.WithKey(jwa.RSA_OAEP(), &rsaKey.PublicKey),
-					jwe.WithContentEncryption(jwa.A256GCM()),
-				)
+				_, err := jwe.Encrypt(payload, withEncKey, withEnc)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -396,10 +397,7 @@ func BenchmarkJWE_PayloadSizes(b *testing.B) {
 
 		b.Run("Decrypt_"+ps.name, func(b *testing.B) {
 			// Pre-encrypt
-			encrypted, err := jwe.Encrypt(payload,
-				jwe.WithKey(jwa.RSA_OAEP(), &rsaKey.PublicKey),
-				jwe.WithContentEncryption(jwa.A256GCM()),
-			)
+			encrypted, err := jwe.Encrypt(payload, withEncKey, withEnc)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -407,7 +405,7 @@ func BenchmarkJWE_PayloadSizes(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwe.Decrypt(encrypted, jwe.WithKey(jwa.RSA_OAEP(), rsaKey))
+				_, err := jwe.Decrypt(encrypted, withDecKey)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -423,15 +421,16 @@ func BenchmarkJWE_Parallel(b *testing.B) {
 	rsaKey, _, _ := setupKeys()
 	payload := []byte("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
 
+	withEncKey := jwe.WithKey(jwa.RSA_OAEP(), &rsaKey.PublicKey)
+	withEnc := jwe.WithContentEncryption(jwa.A256GCM())
+	withDecKey := jwe.WithKey(jwa.RSA_OAEP(), rsaKey)
+
 	b.Run("Encrypt_Parallel", func(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				_, err := jwe.Encrypt(payload,
-					jwe.WithKey(jwa.RSA_OAEP(), &rsaKey.PublicKey),
-					jwe.WithContentEncryption(jwa.A256GCM()),
-				)
+				_, err := jwe.Encrypt(payload, withEncKey, withEnc)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -441,10 +440,7 @@ func BenchmarkJWE_Parallel(b *testing.B) {
 
 	b.Run("Decrypt_Parallel", func(b *testing.B) {
 		// Pre-encrypt
-		encrypted, err := jwe.Encrypt(payload,
-			jwe.WithKey(jwa.RSA_OAEP(), &rsaKey.PublicKey),
-			jwe.WithContentEncryption(jwa.A256GCM()),
-		)
+		encrypted, err := jwe.Encrypt(payload, withEncKey, withEnc)
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -453,7 +449,7 @@ func BenchmarkJWE_Parallel(b *testing.B) {
 		b.ReportAllocs()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				_, err := jwe.Decrypt(encrypted, jwe.WithKey(jwa.RSA_OAEP(), rsaKey))
+				_, err := jwe.Decrypt(encrypted, withDecKey)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -525,14 +521,13 @@ func BenchmarkJWE_Encrypt_HPKE(b *testing.B) {
 	}
 
 	for _, tc := range testcases {
+		withKey := jwe.WithKey(tc.alg, tc.key)
+		withEnc := jwe.WithContentEncryption(tc.enc)
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwe.Encrypt(payload,
-					jwe.WithKey(tc.alg, tc.key),
-					jwe.WithContentEncryption(tc.enc),
-				)
+				_, err := jwe.Encrypt(payload, withKey, withEnc)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -577,11 +572,12 @@ func BenchmarkJWE_Decrypt_HPKE(b *testing.B) {
 			b.Fatal(err)
 		}
 
+		withKey := jwe.WithKey(tc.alg, tc.decKey)
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwe.Decrypt(encrypted, jwe.WithKey(tc.alg, tc.decKey))
+				_, err := jwe.Decrypt(encrypted, withKey)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -613,14 +609,13 @@ func BenchmarkJWE_Encrypt_MLKEM(b *testing.B) {
 	}
 
 	for _, tc := range testcases {
+		withKey := jwe.WithKey(tc.alg, tc.key)
+		withEnc := jwe.WithContentEncryption(tc.enc)
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwe.Encrypt(payload,
-					jwe.WithKey(tc.alg, tc.key),
-					jwe.WithContentEncryption(tc.enc),
-				)
+				_, err := jwe.Encrypt(payload, withKey, withEnc)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -661,11 +656,12 @@ func BenchmarkJWE_Decrypt_MLKEM(b *testing.B) {
 			b.Fatal(err)
 		}
 
+		withKey := jwe.WithKey(tc.alg, tc.decKey)
 		b.Run(tc.name, func(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwe.Decrypt(encrypted, jwe.WithKey(tc.alg, tc.decKey))
+				_, err := jwe.Decrypt(encrypted, withKey)
 				if err != nil {
 					b.Fatal(err)
 				}
