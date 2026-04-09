@@ -41,18 +41,15 @@ if [[ -n "$BASELINE" && ! -f "$RESULTS_DIR/$BASELINE.txt" ]]; then
 fi
 
 # Parse benchmark results: extract median ns/op and B/op for each benchmark.
-# Output: benchmark_name<TAB>ns_op<TAB>b_op<TAB>allocs_op
 parse_results() {
 	local file="$1"
 	awk '
 	/^Benchmark/ {
-		# Extract benchmark name (strip -N suffix)
 		name = $1
 		sub(/-[0-9]+$/, "", name)
 		sub(/^Benchmark/, "", name)
 
 		nsop = $3
-		# Find B/op and allocs/op
 		bop = ""
 		allocsop = ""
 		for (i = 4; i <= NF; i++) {
@@ -60,7 +57,6 @@ parse_results() {
 			if ($(i) == "allocs/op") allocsop = $(i-1)
 		}
 
-		# Accumulate values for median calculation
 		count[name]++
 		values[name][count[name]] = nsop
 		bvalues[name][count[name]] = bop
@@ -69,10 +65,8 @@ parse_results() {
 	END {
 		for (name in count) {
 			n = count[name]
-			# Use the middle value as median approximation
 			mid = int((n + 1) / 2)
 
-			# Sort values to get median
 			for (i = 1; i <= n; i++) sorted[i] = values[name][i]
 			for (i = 1; i <= n; i++)
 				for (j = i + 1; j <= n; j++)
@@ -103,7 +97,6 @@ parse_results() {
 	' "$file"
 }
 
-# Format ns value to human-readable.
 format_ns() {
 	awk -v ns="$1" 'BEGIN {
 		v = ns + 0
@@ -114,7 +107,6 @@ format_ns() {
 	}'
 }
 
-# Format bytes to human-readable.
 format_bytes() {
 	awk -v b="$1" 'BEGIN {
 		v = b + 0
@@ -145,7 +137,6 @@ trap 'rm -rf "$tmpdir"' EXIT
 all_benchmarks=""
 for s in "${available[@]}"; do
 	parse_results "$RESULTS_DIR/$s.txt" > "$tmpdir/$s.tsv"
-	# Collect all benchmark names.
 	all_benchmarks="$all_benchmarks$(cut -f1 "$tmpdir/$s.tsv")
 "
 done
@@ -159,7 +150,6 @@ fi
 # Get unique sorted benchmark names.
 sorted_benchmarks=$(echo "$all_benchmarks" | sort -u | grep -v '^$')
 
-# Group benchmarks by category.
 categories="JWT JWS JWE JWK"
 
 for cat in $categories; do
