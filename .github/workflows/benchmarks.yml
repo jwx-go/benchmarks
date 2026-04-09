@@ -1,0 +1,141 @@
+name: Benchmarks
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # weekly, Monday 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Run mode: quick (count=1), compare (count=8), full (all+opt-in, count=3), or custom'
+        required: false
+        default: 'compare'
+        type: choice
+        options:
+          - quick
+          - compare
+          - full
+          - custom
+      bench:
+        description: 'Benchmark pattern (custom mode only)'
+        required: false
+        default: '.'
+      count:
+        description: 'Number of iterations (custom mode only)'
+        required: false
+        default: '8'
+      suites:
+        description: 'Comma-separated suite names (custom mode only)'
+        required: false
+        default: 'jwx-v3,jwx-v4,golang-jwt,go-jose'
+      tags:
+        description: 'Opt-in build tags (custom mode only, e.g. bench_es256k,bench_mldsa)'
+        required: false
+        default: ''
+      short:
+        description: 'Run in short mode (custom mode only)'
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.x'
+
+      - name: Install benchstat
+        run: go install golang.org/x/perf/cmd/benchstat@latest
+
+      - name: Resolve parameters
+        id: params
+        run: |
+          MODE="${{ inputs.mode || 'compare' }}"
+          case "$MODE" in
+            quick)
+              echo "count=1" >> "$GITHUB_OUTPUT"
+              echo "short=-short" >> "$GITHUB_OUTPUT"
+              echo "tags=" >> "$GITHUB_OUTPUT"
+              echo "suites=jwx-v3 jwx-v4 golang-jwt go-jose" >> "$GITHUB_OUTPUT"
+              echo "bench=." >> "$GITHUB_OUTPUT"
+              ;;
+            compare)
+              echo "count=8" >> "$GITHUB_OUTPUT"
+              echo "short=-short" >> "$GITHUB_OUTPUT"
+              echo "tags=" >> "$GITHUB_OUTPUT"
+              echo "suites=jwx-v3 jwx-v4 golang-jwt go-jose" >> "$GITHUB_OUTPUT"
+              echo "bench=." >> "$GITHUB_OUTPUT"
+              ;;
+            full)
+              echo "count=3" >> "$GITHUB_OUTPUT"
+              echo "short=" >> "$GITHUB_OUTPUT"
+              echo "tags=" >> "$GITHUB_OUTPUT"
+              echo "suites=jwx-v3 jwx-v4 golang-jwt go-jose" >> "$GITHUB_OUTPUT"
+              echo "bench=." >> "$GITHUB_OUTPUT"
+              ;;
+            custom)
+              echo "count=${{ inputs.count || '8' }}" >> "$GITHUB_OUTPUT"
+              SHORT="${{ inputs.short == 'true' && '-short' || '' }}"
+              echo "short=$SHORT" >> "$GITHUB_OUTPUT"
+              echo "tags=${{ inputs.tags }}" >> "$GITHUB_OUTPUT"
+              SUITES=$(echo "${{ inputs.suites || 'jwx-v3,jwx-v4,golang-jwt,go-jose' }}" | tr ',' ' ')
+              echo "suites=$SUITES" >> "$GITHUB_OUTPUT"
+              echo "bench=${{ inputs.bench || '.' }}" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Run benchmarks
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p results
+          for suite in ${{ steps.params.outputs.suites }}; do
+            echo "--- Running $suite ---"
+
+            tags=""
+            goexperiment=""
+            if [ "$suite" = "jwx-v3" ]; then
+              tags="jwx_goccy"
+              if [ -n "${{ steps.params.outputs.tags }}" ]; then
+                tags="${tags},${{ steps.params.outputs.tags }}"
+              fi
+            elif [ "$suite" = "jwx-v4" ]; then
+              goexperiment="GOEXPERIMENT=jsonv2"
+              tags="${{ steps.params.outputs.tags }}"
+            fi
+
+            tagflag=""
+            if [ -n "$tags" ]; then tagflag="-tags $tags"; fi
+
+            GOWORK=off $goexperiment go test -C "suites/$suite" \
+              -run '^$' -bench "${{ steps.params.outputs.bench }}" -benchmem \
+              -count "${{ steps.params.outputs.count }}" -timeout 60m \
+              ${{ steps.params.outputs.short }} $tagflag \
+              | tee "results/$suite.txt"
+
+            echo "  Saved results/$suite.txt"
+          done
+
+      - name: Compare with benchstat
+        run: |
+          RESULT=$(./scripts/compare.sh)
+          {
+            echo "## Benchmark Results (${{ inputs.mode || 'compare' }} mode)"
+            echo ""
+            echo '```'
+            echo "$RESULT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload results
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-results
+          path: results/

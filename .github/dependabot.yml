@@ -6,21 +6,21 @@ updates:
       interval: weekly
 
   - package-ecosystem: gomod
-    directory: /comparison
+    directory: /suites/jwx-v3
     schedule:
       interval: weekly
 
   - package-ecosystem: gomod
-    directory: /crossversion/v3
+    directory: /suites/jwx-v4
     schedule:
       interval: weekly
 
   - package-ecosystem: gomod
-    directory: /crossversion/v4
+    directory: /suites/golang-jwt
     schedule:
       interval: weekly
 
   - package-ecosystem: gomod
-    directory: /performance
+    directory: /suites/go-jose
     schedule:
       interval: weekly
