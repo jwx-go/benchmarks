@@ -19,64 +19,41 @@ import (
 type jwtAlgCase struct {
 	name   string
 	alg    jwa.SignatureAlgorithm
-	key    jwk.Key // signing key
-	pubkey jwk.Key // verification key
+	key    any // signing key (raw crypto type)
+	pubkey any // verification key (raw crypto type)
 }
 
+// jwtAlgCases returns benchmark cases using raw crypto keys.
+// We deliberately use raw keys (not jwk.Key) so the benchmark measures
+// JWT sign/verify/parse overhead without including JWK-to-raw export
+// cost on every iteration. golang-jwt uses raw keys directly, so this
+// keeps the comparison fair.
 func jwtAlgCases(b *testing.B) []jwtAlgCase {
 	b.Helper()
 
-	hmacRaw := make([]byte, 32)
-	rand.Read(hmacRaw)
-	hmacKey, err := jwk.Import[jwk.Key](hmacRaw)
+	hmacKey := make([]byte, 32)
+	rand.Read(hmacKey)
+
+	rsaKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	rsaRaw, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		b.Fatal(err)
-	}
-	rsaKey, err := jwk.Import[jwk.Key](rsaRaw)
-	if err != nil {
-		b.Fatal(err)
-	}
-	rsaPub, err := jwk.PublicKeyOf(rsaKey)
+	ecKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		b.Fatal(err)
 	}
 
-	ecRaw, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		b.Fatal(err)
-	}
-	ecKey, err := jwk.Import[jwk.Key](ecRaw)
-	if err != nil {
-		b.Fatal(err)
-	}
-	ecPub, err := jwk.PublicKeyOf(ecKey)
-	if err != nil {
-		b.Fatal(err)
-	}
-
-	_, edRaw, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		b.Fatal(err)
-	}
-	edKey, err := jwk.Import[jwk.Key](edRaw)
-	if err != nil {
-		b.Fatal(err)
-	}
-	edPub, err := jwk.PublicKeyOf(edKey)
+	edPub, edKey, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		b.Fatal(err)
 	}
 
 	return []jwtAlgCase{
 		{"HS256", jwa.HS256(), hmacKey, hmacKey},
-		{"RS256", jwa.RS256(), rsaKey, rsaPub},
-		{"ES256", jwa.ES256(), ecKey, ecPub},
-		{"PS256", jwa.PS256(), rsaKey, rsaPub},
+		{"RS256", jwa.RS256(), rsaKey, &rsaKey.PublicKey},
+		{"ES256", jwa.ES256(), ecKey, &ecKey.PublicKey},
+		{"PS256", jwa.PS256(), rsaKey, &rsaKey.PublicKey},
 		{"EdDSA", jwa.EdDSA(), edKey, edPub},
 	}
 }
