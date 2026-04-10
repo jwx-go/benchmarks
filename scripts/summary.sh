@@ -11,6 +11,8 @@ set -euo pipefail
 RESULTS_DIR="${1:-results}"
 BASELINE="${BASELINE:-${2:-}}"
 SUITES=(jwx-v3 jwx-v4 golang-jwt go-jose)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Collect available suites.
 available=()
@@ -158,6 +160,31 @@ fi
 
 # Get unique sorted benchmark names.
 sorted_benchmarks=$(echo "$all_benchmarks" | sort -u | grep -v '^$')
+
+# Print module versions for each available suite.
+# Maps suite name to the grep pattern for its primary module in go.mod.
+declare -A suite_mod_pattern=(
+	[jwx-v3]="lestrrat-go/jwx/v3"
+	[jwx-v4]="lestrrat-go/jwx/v4"
+	[golang-jwt]="golang-jwt/jwt"
+	[go-jose]="go-jose/go-jose"
+)
+
+echo "#### Module Versions"
+echo ""
+echo "| Suite | Module | Version |"
+echo "| --- | --- | --- |"
+for s in "${available[@]}"; do
+	gomod="$REPO_ROOT/suites/$s/go.mod"
+	pattern="${suite_mod_pattern[$s]:-}"
+	if [[ -n "$pattern" && -f "$gomod" ]]; then
+		mod_line=$(grep "$pattern" "$gomod" | head -1)
+		mod=$(echo "$mod_line" | awk '{print $NF}')
+		pkg=$(echo "$mod_line" | awk '{print $(NF-1)}')
+		echo "| $s | \`$pkg\` | \`$mod\` |"
+	fi
+done
+echo ""
 
 # Group benchmarks by category.
 categories="JWT JWS JWE JWK"
