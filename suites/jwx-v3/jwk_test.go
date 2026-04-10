@@ -59,7 +59,7 @@ func BenchmarkJWK_Parse(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwk.Parse(buf)
+				_, err := jwk.ParseKey(buf)
 				if err != nil {
 					b.Fatal(err)
 				}
@@ -164,7 +164,7 @@ func BenchmarkJWK_Parse_OKP(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := jwk.Parse(buf)
+				_, err := jwk.ParseKey(buf)
 				if err != nil {
 					b.Fatal(err)
 				}
