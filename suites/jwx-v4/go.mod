@@ -2,7 +2,7 @@ module github.com/jwx-go/benchmarks/suites/jwx-v4
 
 go 1.26.0
 
-require github.com/lestrrat-go/jwx/v4 v4.0.0-scratch.8
+require github.com/lestrrat-go/jwx/v4 v4.0.0-scratch.9
 
 require (
 	github.com/lestrrat-go/dsig v1.1.0 // indirect
