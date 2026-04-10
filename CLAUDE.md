@@ -66,7 +66,7 @@ Each suite under `suites/` is an independent Go module with `_test.go` files onl
 | JWT_VerifyValidate/{same} — signature verification + claims validation | yes | yes |
 | JWT_Serialization (Compact/JSON formats) | — | yes |
 
-golang-jwt additionally benchmarks HS384/512, RS384/512, PS384/512, ES384/512 in all modes (no short-gating).
+golang-jwt additionally benchmarks HS384/512, RS384/512, PS384/512, ES384/512 in full mode only (short-gated like jwx suites).
 
 **JWS** (jwx-v3, jwx-v4, go-jose)
 

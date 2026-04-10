@@ -56,27 +56,28 @@ func init() {
 }
 
 type algCase struct {
-	name   string
-	method jwt.SigningMethod
-	key    any
-	pubkey any
+	name      string
+	method    jwt.SigningMethod
+	key       any
+	pubkey    any
+	skipShort bool
 }
 
 func algCases() []algCase {
 	return []algCase{
-		{"HS256", jwt.SigningMethodHS256, hmacKey, hmacKey},
-		{"HS384", jwt.SigningMethodHS384, hmacKey, hmacKey},
-		{"HS512", jwt.SigningMethodHS512, hmacKey, hmacKey},
-		{"RS256", jwt.SigningMethodRS256, rsaKey, &rsaKey.PublicKey},
-		{"RS384", jwt.SigningMethodRS384, rsaKey, &rsaKey.PublicKey},
-		{"RS512", jwt.SigningMethodRS512, rsaKey, &rsaKey.PublicKey},
-		{"PS256", jwt.SigningMethodPS256, rsaKey, &rsaKey.PublicKey},
-		{"PS384", jwt.SigningMethodPS384, rsaKey, &rsaKey.PublicKey},
-		{"PS512", jwt.SigningMethodPS512, rsaKey, &rsaKey.PublicKey},
-		{"ES256", jwt.SigningMethodES256, ecP256Key, &ecP256Key.PublicKey},
-		{"ES384", jwt.SigningMethodES384, ecP384Key, &ecP384Key.PublicKey},
-		{"ES512", jwt.SigningMethodES512, ecP521Key, &ecP521Key.PublicKey},
-		{"EdDSA", jwt.SigningMethodEdDSA, edKey, edPubKey},
+		{"HS256", jwt.SigningMethodHS256, hmacKey, hmacKey, false},
+		{"HS384", jwt.SigningMethodHS384, hmacKey, hmacKey, true},
+		{"HS512", jwt.SigningMethodHS512, hmacKey, hmacKey, true},
+		{"RS256", jwt.SigningMethodRS256, rsaKey, &rsaKey.PublicKey, false},
+		{"RS384", jwt.SigningMethodRS384, rsaKey, &rsaKey.PublicKey, true},
+		{"RS512", jwt.SigningMethodRS512, rsaKey, &rsaKey.PublicKey, true},
+		{"PS256", jwt.SigningMethodPS256, rsaKey, &rsaKey.PublicKey, false},
+		{"PS384", jwt.SigningMethodPS384, rsaKey, &rsaKey.PublicKey, true},
+		{"PS512", jwt.SigningMethodPS512, rsaKey, &rsaKey.PublicKey, true},
+		{"ES256", jwt.SigningMethodES256, ecP256Key, &ecP256Key.PublicKey, false},
+		{"ES384", jwt.SigningMethodES384, ecP384Key, &ecP384Key.PublicKey, true},
+		{"ES512", jwt.SigningMethodES512, ecP521Key, &ecP521Key.PublicKey, true},
+		{"EdDSA", jwt.SigningMethodEdDSA, edKey, edPubKey, false},
 	}
 }
 
@@ -93,6 +94,9 @@ func BenchmarkJWT_Sign(b *testing.B) {
 	claims := makeClaims()
 	for _, ac := range algCases() {
 		b.Run(ac.name, func(b *testing.B) {
+			if ac.skipShort && testing.Short() {
+				b.Skip("skipping extended algorithm in short mode")
+			}
 			token := jwt.NewWithClaims(ac.method, claims)
 			b.ReportAllocs()
 			b.ResetTimer()
@@ -116,6 +120,9 @@ func BenchmarkJWT_Parse(b *testing.B) {
 		}
 		pubkey := ac.pubkey
 		b.Run(ac.name, func(b *testing.B) {
+			if ac.skipShort && testing.Short() {
+				b.Skip("skipping extended algorithm in short mode")
+			}
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -144,6 +151,9 @@ func BenchmarkJWT_Verify(b *testing.B) {
 		}
 		pubkey := ac.pubkey
 		b.Run(ac.name, func(b *testing.B) {
+			if ac.skipShort && testing.Short() {
+				b.Skip("skipping extended algorithm in short mode")
+			}
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -168,6 +178,9 @@ func BenchmarkJWT_VerifyValidate(b *testing.B) {
 		}
 		pubkey := ac.pubkey
 		b.Run(ac.name, func(b *testing.B) {
+			if ac.skipShort && testing.Short() {
+				b.Skip("skipping extended algorithm in short mode")
+			}
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {

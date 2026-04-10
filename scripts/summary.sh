@@ -188,6 +188,7 @@ for cat in $categories; do
 	# Build rows.
 	while IFS= read -r bench; do
 		row="| \`$bench\` |"
+		shown=0
 		for s in "${available[@]}"; do
 			val=$(grep "^${bench}	" "$tmpdir/$s.tsv" 2>/dev/null || true)
 			if [[ -n "$val" ]]; then
@@ -204,6 +205,7 @@ for cat in $categories; do
 						b_delta=$(format_pct "$bop" "$base_bop")
 						a_delta=$(format_pct "$allocsop" "$base_allocsop")
 						row="$row ${ns_delta} / ${b_delta} / ${a_delta} |"
+						shown=$((shown + 1))
 					else
 						row="$row — |"
 					fi
@@ -211,12 +213,15 @@ for cat in $categories; do
 					formatted_ns=$(format_ns "$nsop")
 					formatted_b=$(format_bytes "$bop")
 					row="$row ${formatted_ns} / ${formatted_b} / ${allocsop}a |"
+					shown=$((shown + 1))
 				fi
 			else
 				row="$row — |"
 			fi
 		done
-		echo "$row"
+		if [[ $shown -gt 0 ]]; then
+			echo "$row"
+		fi
 	done <<< "$cat_benchmarks"
 
 	echo ""
