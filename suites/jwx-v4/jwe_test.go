@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	jwxmlkem "github.com/jwx-go/mlkem/v4"
 	"github.com/lestrrat-go/jwx/v4/jwa"
 	"github.com/lestrrat-go/jwx/v4/jwe"
 )
@@ -602,10 +603,10 @@ func BenchmarkJWE_Encrypt_MLKEM(b *testing.B) {
 		enc  jwa.ContentEncryptionAlgorithm
 		key  interface{}
 	}{
-		{"ML-KEM-768/A256GCM", jwa.ML_KEM_768(), jwa.A256GCM(), dk768.EncapsulationKey()},
-		{"ML-KEM-1024/A256GCM", jwa.ML_KEM_1024(), jwa.A256GCM(), dk1024.EncapsulationKey()},
-		{"ML-KEM-768+A192KW/A256GCM", jwa.ML_KEM_768_A192KW(), jwa.A256GCM(), dk768.EncapsulationKey()},
-		{"ML-KEM-1024+A256KW/A256GCM", jwa.ML_KEM_1024_A256KW(), jwa.A256GCM(), dk1024.EncapsulationKey()},
+		{"ML-KEM-768/A256GCM", jwxmlkem.MLKEM768(), jwa.A256GCM(), dk768.EncapsulationKey()},
+		{"ML-KEM-1024/A256GCM", jwxmlkem.MLKEM1024(), jwa.A256GCM(), dk1024.EncapsulationKey()},
+		{"ML-KEM-768+A192KW/A256GCM", jwxmlkem.MLKEM768A192KW(), jwa.A256GCM(), dk768.EncapsulationKey()},
+		{"ML-KEM-1024+A256KW/A256GCM", jwxmlkem.MLKEM1024A256KW(), jwa.A256GCM(), dk1024.EncapsulationKey()},
 	}
 
 	for _, tc := range testcases {
@@ -641,10 +642,10 @@ func BenchmarkJWE_Decrypt_MLKEM(b *testing.B) {
 		encKey interface{}
 		decKey interface{}
 	}{
-		{"ML-KEM-768/A256GCM", jwa.ML_KEM_768(), jwa.A256GCM(), dk768.EncapsulationKey(), dk768},
-		{"ML-KEM-1024/A256GCM", jwa.ML_KEM_1024(), jwa.A256GCM(), dk1024.EncapsulationKey(), dk1024},
-		{"ML-KEM-768+A192KW/A256GCM", jwa.ML_KEM_768_A192KW(), jwa.A256GCM(), dk768.EncapsulationKey(), dk768},
-		{"ML-KEM-1024+A256KW/A256GCM", jwa.ML_KEM_1024_A256KW(), jwa.A256GCM(), dk1024.EncapsulationKey(), dk1024},
+		{"ML-KEM-768/A256GCM", jwxmlkem.MLKEM768(), jwa.A256GCM(), dk768.EncapsulationKey(), dk768},
+		{"ML-KEM-1024/A256GCM", jwxmlkem.MLKEM1024(), jwa.A256GCM(), dk1024.EncapsulationKey(), dk1024},
+		{"ML-KEM-768+A192KW/A256GCM", jwxmlkem.MLKEM768A192KW(), jwa.A256GCM(), dk768.EncapsulationKey(), dk768},
+		{"ML-KEM-1024+A256KW/A256GCM", jwxmlkem.MLKEM1024A256KW(), jwa.A256GCM(), dk1024.EncapsulationKey(), dk1024},
 	}
 
 	for _, tc := range testcases {
