@@ -1,3 +1,8 @@
 *.txt
 !README*.txt
 .tmp/
+
+# Agent-tooling scratch directories and Go workspace files
+.worktrees/
+go.work
+go.work.sum
