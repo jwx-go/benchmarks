@@ -161,6 +161,49 @@ fi
 # Get unique sorted benchmark names.
 sorted_benchmarks=$(echo "$all_benchmarks" | sort -u | grep -v '^$')
 
+# Compute geomean delta of competitor vs baseline across shared benchmarks.
+# Outputs: <count>\t<ns%>\t<b%>\t<alloc%> (or empty if no overlap).
+geomean_delta() {
+	local base="$1" comp="$2"
+	awk -F'\t' '
+	NR==FNR { base[$1] = $2 "\t" $3 "\t" $4; next }
+	{
+		if (!($1 in base)) next
+		split(base[$1], b, "\t")
+		if ($2+0 > 0 && b[1]+0 > 0) { sns += log($2/b[1]); nns++ }
+		if ($3+0 > 0 && b[2]+0 > 0) { sbo += log($3/b[2]); nbo++ }
+		if ($4+0 > 0 && b[3]+0 > 0) { sao += log($4/b[3]); nao++ }
+		shared++
+	}
+	END {
+		if (shared == 0) exit
+		printf "%d\t%s\t%s\t%s\n", shared,
+			(nns>0 ? sprintf("%+.1f%%", (exp(sns/nns)-1)*100) : "—"),
+			(nbo>0 ? sprintf("%+.1f%%", (exp(sbo/nbo)-1)*100) : "—"),
+			(nao>0 ? sprintf("%+.1f%%", (exp(sao/nao)-1)*100) : "—")
+	}
+	' "$base" "$comp"
+}
+
+# Short summary: one-line geomean deltas vs baseline.
+if [[ -n "$baseline_file" ]]; then
+	echo "#### Summary vs \`$BASELINE\` (geomean over shared benchmarks)"
+	echo ""
+	echo "| Suite | Shared | ns/op | B/op | allocs/op |"
+	echo "| --- | ---: | ---: | ---: | ---: |"
+	for s in "${available[@]}"; do
+		if [[ "$s" == "$BASELINE" ]]; then continue; fi
+		line=$(geomean_delta "$baseline_file" "$tmpdir/$s.tsv")
+		if [[ -n "$line" ]]; then
+			IFS=$'\t' read -r shared ns bo ao <<< "$line"
+			echo "| $s | $shared | $ns | $bo | $ao |"
+		fi
+	done
+	echo ""
+	echo "_Positive = slower / more memory / more allocs than \`$BASELINE\`._"
+	echo ""
+fi
+
 # Print module versions for each available suite.
 # Maps suite name to the grep pattern for its primary module in go.mod.
 declare -A suite_mod_pattern=(
