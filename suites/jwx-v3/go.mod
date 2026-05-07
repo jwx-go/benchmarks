@@ -2,7 +2,7 @@ module github.com/jwx-go/benchmarks/suites/jwx-v3
 
 go 1.25.0
 
-require github.com/lestrrat-go/jwx/v3 v3.1.0
+require github.com/lestrrat-go/jwx/v3 v3.1.1
 
 require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect
