@@ -3,7 +3,7 @@ module github.com/jwx-go/benchmarks/suites/jwx-v4
 go 1.26.0
 
 require (
-	github.com/jwx-go/mlkem/v4 v4.0.2
+	github.com/jwx-go/mlkem/v4 v4.0.3
 	github.com/lestrrat-go/jwx/v4 v4.1.0
 )
 
