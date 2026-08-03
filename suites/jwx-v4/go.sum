@@ -1,7 +1,7 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/jwx-go/mlkem/v4 v4.0.3 h1:eU9cRDkSndfhEfw0sjjQys8/8+KjS57sXhJz/tvGHoc=
-github.com/jwx-go/mlkem/v4 v4.0.3/go.mod h1:DkzGIBQ3zZln1JPzXE8fgc46b2LQdXalF2/U5GGmbhA=
+github.com/jwx-go/mlkem/v4 v4.0.4 h1:bwt/MKyTp7l9/znNrgcUqXNTnziy7QL7Kz/mA5LSioo=
+github.com/jwx-go/mlkem/v4 v4.0.4/go.mod h1:oUglg+HP6hpG+x3ZgDmjB0WyVg1KsQ2fO0uw6hdVTkE=
 github.com/lestrrat-go/dsig v1.3.0 h1:phjMOCXvYzhuIgn7Voe2rex8z166vGfxRxmqM25P9/Q=
 github.com/lestrrat-go/dsig v1.3.0/go.mod h1:RD2eOaidyPvpc7IJQoO3Qq52RWdy8ZcJs8lrOnoa1Kc=
 github.com/lestrrat-go/jwx/v4 v4.2.0 h1:YpyEnRqejbDGwOSB8rIKD2EXqfAEA/2LLN2ZZkzm9xs=
