@@ -10,7 +10,7 @@ set -euo pipefail
 
 RESULTS_DIR="${1:-results}"
 BASELINE="${BASELINE:-${2:-}}"
-SUITES=(jwx-v3 jwx-v4 golang-jwt go-jose)
+SUITES=(jwx-v3 jwx-v4 golang-jwt golang-jwt-pqc go-jose)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 
@@ -210,6 +210,7 @@ declare -A suite_mod_pattern=(
 	[jwx-v3]="lestrrat-go/jwx/v3"
 	[jwx-v4]="lestrrat-go/jwx/v4"
 	[golang-jwt]="golang-jwt/jwt"
+	[golang-jwt-pqc]="salrashid123/golang-jwt-pqc/mldsa"
 	[go-jose]="go-jose/go-jose"
 )
 

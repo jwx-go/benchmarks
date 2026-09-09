@@ -17,13 +17,13 @@ var (
 	jweAESKey16 []byte // 16-byte key for A128GCMKW
 	jwePayload  = []byte("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.")
 
-	jweCompactRSAOAEP       string
-	jweCompactRSA15         string
-	jweCompactA256KW        string
-	jweCompactA128GCMKW     string
-	jweCompactECDHES        string
-	jweCompactECDHESA256KW  string
-	jweCompactDIRECT        string
+	jweCompactRSAOAEP      string
+	jweCompactRSA15        string
+	jweCompactA256KW       string
+	jweCompactA128GCMKW    string
+	jweCompactECDHES       string
+	jweCompactECDHESA256KW string
+	jweCompactDIRECT       string
 )
 
 func init() {

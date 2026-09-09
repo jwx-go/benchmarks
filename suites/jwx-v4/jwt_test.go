@@ -321,3 +321,84 @@ func BenchmarkJWT_Serialization(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkJWT_Sign_MLDSA(b *testing.B) {
+	tok := makeJwtToken()
+	for _, tc := range mldsaCases(b) {
+		withKey := jwt.WithKey(tc.Alg, tc.Private)
+		b.Run(tc.Name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, err := jwt.Sign(tok, withKey)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkJWT_Parse_MLDSA(b *testing.B) {
+	tok := makeJwtToken()
+	for _, tc := range mldsaCases(b) {
+		signed, err := jwt.Sign(tok, jwt.WithKey(tc.Alg, tc.Private))
+		if err != nil {
+			b.Fatal(err)
+		}
+		withKey := jwt.WithKey(tc.Alg, tc.Public)
+		b.Run(tc.Name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, err := jwt.Parse(signed, withKey)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkJWT_Verify_MLDSA(b *testing.B) {
+	tok := makeJwtToken()
+	for _, tc := range mldsaCases(b) {
+		signed, err := jwt.Sign(tok, jwt.WithKey(tc.Alg, tc.Private))
+		if err != nil {
+			b.Fatal(err)
+		}
+		withKey := jwt.WithKey(tc.Alg, tc.Public)
+		noValidate := jwt.WithValidate(false)
+		b.Run(tc.Name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, err := jwt.Parse(signed, withKey, noValidate)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkJWT_VerifyValidate_MLDSA(b *testing.B) {
+	tok := makeJwtToken()
+	for _, tc := range mldsaCases(b) {
+		signed, err := jwt.Sign(tok, jwt.WithKey(tc.Alg, tc.Private))
+		if err != nil {
+			b.Fatal(err)
+		}
+		withKey := jwt.WithKey(tc.Alg, tc.Public)
+		b.Run(tc.Name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, err := jwt.Parse(signed, withKey)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
