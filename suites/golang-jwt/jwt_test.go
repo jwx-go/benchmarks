@@ -13,13 +13,13 @@ import (
 )
 
 var (
-	hmacKey    []byte
-	rsaKey     *rsa.PrivateKey
-	ecP256Key  *ecdsa.PrivateKey
-	ecP384Key  *ecdsa.PrivateKey
-	ecP521Key  *ecdsa.PrivateKey
-	edKey      ed25519.PrivateKey
-	edPubKey   ed25519.PublicKey
+	hmacKey   []byte
+	rsaKey    *rsa.PrivateKey
+	ecP256Key *ecdsa.PrivateKey
+	ecP384Key *ecdsa.PrivateKey
+	ecP521Key *ecdsa.PrivateKey
+	edKey     ed25519.PrivateKey
+	edPubKey  ed25519.PublicKey
 )
 
 func init() {

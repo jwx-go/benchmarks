@@ -16,11 +16,11 @@ var (
 	jwkECDSAKey *ecdsa.PrivateKey
 	jwkSymKey   []byte
 
-	jwkRSAPublicJSON    []byte
-	jwkRSAPrivateJSON   []byte
-	jwkECPublicJSON     []byte
-	jwkECPrivateJSON    []byte
-	jwkSymmetricJSON    []byte
+	jwkRSAPublicJSON  []byte
+	jwkRSAPrivateJSON []byte
+	jwkECPublicJSON   []byte
+	jwkECPrivateJSON  []byte
+	jwkSymmetricJSON  []byte
 )
 
 func init() {
