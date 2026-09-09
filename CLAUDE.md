@@ -119,7 +119,9 @@ v3 uses `jwk.Import(raw)`, v4 uses `jwk.Import[jwk.Key](raw)` (generics).
 
 ## CI
 
-Single workflow `.github/workflows/benchmarks.yml`: weekly schedule + manual dispatch with mode/baseline/suite selection. Generates markdown summary in GitHub Step Summary with percentage deltas against a baseline suite (auto-detects jwx-v4). Raw results uploaded as artifacts.
+`.github/workflows/benchmarks.yml`: weekly schedule + manual dispatch with mode/baseline/suite selection. Generates markdown summary in GitHub Step Summary with percentage deltas against a baseline suite (auto-detects jwx-v4). Raw results uploaded as artifacts.
+
+`.github/workflows/lint.yml`: golangci-lint over every suite, one matrix entry per suite. Adding a suite means adding it to both workflows and to `SUITES` in the Makefile and in `scripts/summary.sh`.
 
 ## Opt-in Algorithms (Build Tags)
 
