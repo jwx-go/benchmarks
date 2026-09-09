@@ -4,10 +4,12 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"testing"
 
+	"github.com/lestrrat-go/jwx/v4/jwa"
 	"github.com/lestrrat-go/jwx/v4/jwk"
 )
 
@@ -74,4 +76,45 @@ func generateEd25519Jwk() (jwk.Key, error) {
 		return nil, err
 	}
 	return jwk.Import[jwk.Key](raw)
+}
+
+// mldsaCase is one ML-DSA parameter set with a freshly generated key pair.
+// The public key is carried separately so verification benchmarks can hand
+// jws/jwt exactly what a verifier would hold.
+type mldsaCase struct {
+	Name    string
+	Alg     jwa.SignatureAlgorithm
+	Private *mldsa.PrivateKey
+	Public  *mldsa.PublicKey
+}
+
+// mldsaCases returns the three FIPS 204 parameter sets. ML-DSA is native to
+// jwx from Go 1.27 on, so no companion module is involved here.
+func mldsaCases(b *testing.B) []mldsaCase {
+	b.Helper()
+
+	entries := []struct {
+		name   string
+		alg    jwa.SignatureAlgorithm
+		params mldsa.Parameters
+	}{
+		{"ML-DSA-44", jwa.MLDSA44(), mldsa.MLDSA44()},
+		{"ML-DSA-65", jwa.MLDSA65(), mldsa.MLDSA65()},
+		{"ML-DSA-87", jwa.MLDSA87(), mldsa.MLDSA87()},
+	}
+
+	cases := make([]mldsaCase, 0, len(entries))
+	for _, entry := range entries {
+		priv, err := mldsa.GenerateKey(entry.params)
+		if err != nil {
+			b.Fatal(err)
+		}
+		cases = append(cases, mldsaCase{
+			Name:    entry.name,
+			Alg:     entry.alg,
+			Private: priv,
+			Public:  priv.PublicKey(),
+		})
+	}
+	return cases
 }

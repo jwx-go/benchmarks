@@ -588,10 +588,6 @@ func BenchmarkJWE_Decrypt_HPKE(b *testing.B) {
 }
 
 func BenchmarkJWE_Encrypt_MLKEM(b *testing.B) {
-	if testing.Short() {
-		b.Skip("skipping in short mode")
-	}
-
 	dk768, _ := mlkem.GenerateKey768()
 	dk1024, _ := mlkem.GenerateKey1024()
 
@@ -626,10 +622,6 @@ func BenchmarkJWE_Encrypt_MLKEM(b *testing.B) {
 }
 
 func BenchmarkJWE_Decrypt_MLKEM(b *testing.B) {
-	if testing.Short() {
-		b.Skip("skipping in short mode")
-	}
-
 	dk768, _ := mlkem.GenerateKey768()
 	dk1024, _ := mlkem.GenerateKey1024()
 

@@ -26,9 +26,9 @@ on:
       suites:
         description: 'Comma-separated suite names (custom mode only)'
         required: false
-        default: 'jwx-v3,jwx-v4,golang-jwt,go-jose'
+        default: 'jwx-v3,jwx-v4,golang-jwt,golang-jwt-pqc,go-jose'
       tags:
-        description: 'Opt-in build tags (custom mode only, e.g. bench_es256k,bench_mldsa)'
+        description: 'Opt-in build tags (custom mode only, e.g. bench_es256k,bench_ed448)'
         required: false
         default: ''
       short:
@@ -53,7 +53,7 @@ jobs:
 
       - uses: actions/setup-go@v7
         with:
-          go-version: '1.26.x'
+          go-version: '1.27.x'
 
       - name: Install benchstat
         run: go install golang.org/x/perf/cmd/benchstat@latest
@@ -67,21 +67,21 @@ jobs:
               echo "count=1" >> "$GITHUB_OUTPUT"
               echo "short=-short" >> "$GITHUB_OUTPUT"
               echo "tags=" >> "$GITHUB_OUTPUT"
-              echo "suites=jwx-v3 jwx-v4 golang-jwt go-jose" >> "$GITHUB_OUTPUT"
+              echo "suites=jwx-v3 jwx-v4 golang-jwt golang-jwt-pqc go-jose" >> "$GITHUB_OUTPUT"
               echo "bench=." >> "$GITHUB_OUTPUT"
               ;;
             compare)
               echo "count=8" >> "$GITHUB_OUTPUT"
               echo "short=-short" >> "$GITHUB_OUTPUT"
               echo "tags=" >> "$GITHUB_OUTPUT"
-              echo "suites=jwx-v3 jwx-v4 golang-jwt go-jose" >> "$GITHUB_OUTPUT"
+              echo "suites=jwx-v3 jwx-v4 golang-jwt golang-jwt-pqc go-jose" >> "$GITHUB_OUTPUT"
               echo "bench=." >> "$GITHUB_OUTPUT"
               ;;
             full)
               echo "count=3" >> "$GITHUB_OUTPUT"
               echo "short=" >> "$GITHUB_OUTPUT"
               echo "tags=" >> "$GITHUB_OUTPUT"
-              echo "suites=jwx-v3 jwx-v4 golang-jwt go-jose" >> "$GITHUB_OUTPUT"
+              echo "suites=jwx-v3 jwx-v4 golang-jwt golang-jwt-pqc go-jose" >> "$GITHUB_OUTPUT"
               echo "bench=." >> "$GITHUB_OUTPUT"
               ;;
             custom)
@@ -89,7 +89,7 @@ jobs:
               SHORT="${{ inputs.short == 'true' && '-short' || '' }}"
               echo "short=$SHORT" >> "$GITHUB_OUTPUT"
               echo "tags=${{ inputs.tags }}" >> "$GITHUB_OUTPUT"
-              SUITES=$(echo "${{ inputs.suites || 'jwx-v3,jwx-v4,golang-jwt,go-jose' }}" | tr ',' ' ')
+              SUITES=$(echo "${{ inputs.suites || 'jwx-v3,jwx-v4,golang-jwt,golang-jwt-pqc,go-jose' }}" | tr ',' ' ')
               echo "suites=$SUITES" >> "$GITHUB_OUTPUT"
               echo "bench=${{ inputs.bench || '.' }}" >> "$GITHUB_OUTPUT"
               ;;
@@ -103,16 +103,13 @@ jobs:
           for suite in ${{ steps.params.outputs.suites }}; do
             echo "--- Running $suite ---"
 
-            tags=""
+            tags="${{ steps.params.outputs.tags }}"
             export GOEXPERIMENT=""
             if [ "$suite" = "jwx-v3" ]; then
               tags="jwx_goccy"
               if [ -n "${{ steps.params.outputs.tags }}" ]; then
                 tags="${tags},${{ steps.params.outputs.tags }}"
               fi
-            elif [ "$suite" = "jwx-v4" ]; then
-              export GOEXPERIMENT=jsonv2
-              tags="${{ steps.params.outputs.tags }}"
             fi
 
             tagflag=""

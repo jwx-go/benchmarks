@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-Benchmark suite comparing JWT/JWS/JWE/JWK implementations across Go libraries: jwx v3, jwx v4, golang-jwt/v5, and go-jose/v4. All suites use identical benchmark names so benchstat can compare results across any pair.
+Benchmark suite comparing JWT/JWS/JWE/JWK implementations across Go libraries: jwx v3, jwx v4, golang-jwt/v5, salrashid123/golang-jwt-pqc, and go-jose/v4. All suites use identical benchmark names so benchstat can compare results across any pair.
 
 ## Running Benchmarks
 
@@ -22,10 +22,17 @@ Results land in `results/<suite>.txt`. Scripts in `scripts/` generate comparison
 
 | Suite | Go version | Special flags |
 |-------|-----------|---------------|
-| jwx-v3 | 1.25 | Always `-tags jwx_goccy` (handled by Makefile/CI) |
-| jwx-v4 | 1.26 | Always `GOEXPERIMENT=jsonv2` (handled by Makefile/CI) |
-| golang-jwt | 1.25 | None |
-| go-jose | 1.25 | None |
+| jwx-v3 | 1.27 | Always `-tags jwx_goccy` (handled by Makefile/CI) |
+| jwx-v4 | 1.27 | None |
+| golang-jwt | 1.27 | None |
+| golang-jwt-pqc | 1.27 | None |
+| go-jose | 1.27 | None |
+
+Every suite is on Go 1.27 because `crypto/mldsa` lands there, and because that is
+the release from which jwx v4 registers ML-DSA natively. **Do not set
+`GOEXPERIMENT=jsonv2`.** json/v2 is part of the standard library on Go 1.27, so
+naming it as an experiment fails outright. The Makefile and CI both clear
+`GOEXPERIMENT` before each suite so an inherited value cannot break a run.
 
 Always use `GOWORK=off` when running benchmarks directly (Makefile handles this).
 
@@ -36,9 +43,9 @@ Always use `GOWORK=off` when running benchmarks directly (Makefile handles this)
 cd suites/jwx-v3 && GOWORK=off go test -tags jwx_goccy -run '^$' -bench BenchmarkJWT_Sign -benchmem -count 1
 
 # v4
-cd suites/jwx-v4 && GOWORK=off GOEXPERIMENT=jsonv2 go test -run '^$' -bench BenchmarkJWT_Sign -benchmem -count 1
+cd suites/jwx-v4 && GOWORK=off go test -run '^$' -bench BenchmarkJWT_Sign -benchmem -count 1
 
-# golang-jwt / go-jose
+# golang-jwt / golang-jwt-pqc / go-jose
 cd suites/golang-jwt && go test -run '^$' -bench BenchmarkJWT_Sign -benchmem -count 1
 ```
 
@@ -46,17 +53,19 @@ cd suites/golang-jwt && go test -run '^$' -bench BenchmarkJWT_Sign -benchmem -co
 
 Each suite under `suites/` is an independent Go module with `_test.go` files only (no library code). Benchmark functions follow the pattern `BenchmarkCategory_Operation/Algorithm` (e.g., `BenchmarkJWT_Sign/ES256`).
 
-**jwx-v3 and jwx-v4** have the most comprehensive coverage: JWT, JWS, JWE, JWK with extended algorithm matrices, serialization formats, payload sizes, and parallel tests. v4 adds HPKE and ML-KEM benchmarks.
+**jwx-v3 and jwx-v4** have the most comprehensive coverage: JWT, JWS, JWE, JWK with extended algorithm matrices, serialization formats, payload sizes, and parallel tests. v4 adds HPKE, ML-KEM, and ML-DSA benchmarks.
 
 **golang-jwt** covers JWT only (Sign/Parse/Verify) across 13 algorithms — all supported signing methods.
+
+**golang-jwt-pqc** covers JWT ML-DSA only. golang-jwt/v5 ships no post-quantum signing method, so the PQC comparison runs through salrashid123/golang-jwt-pqc, which registers ML-DSA-44/65/87 with golang-jwt and signs through `crypto/mldsa`. That module's published ML-DSA submodule requires its own parent at an untagged `v0.0.0`, so the suite's `go.mod` needs a `replace` directive pinning the parent to a real release. Leave that directive in place.
 
 **go-jose** covers JWS, JWE, and JWK (no JWT layer).
 
 ### Benchmarks by Run Mode
 
-`quick` and `compare` use `-short`; `full` disables it. All four suites run in every mode.
+`quick` and `compare` use `-short`; `full` disables it. All five suites run in every mode.
 
-**JWT** (jwx-v3, jwx-v4, golang-jwt)
+**JWT** (jwx-v3, jwx-v4, golang-jwt, golang-jwt-pqc)
 
 | Benchmark | quick/compare | full |
 |-----------|:---:|:---:|
@@ -64,6 +73,7 @@ Each suite under `suites/` is an independent Go module with `_test.go` files onl
 | JWT_Parse/{HS256,RS256,ES256,PS256,EdDSA} | yes | yes |
 | JWT_Verify/{same} — signature verification only, no claims validation | yes | yes |
 | JWT_VerifyValidate/{same} — signature verification + claims validation | yes | yes |
+| JWT_Sign_MLDSA / JWT_Parse_MLDSA / JWT_Verify_MLDSA / JWT_VerifyValidate_MLDSA (ML-DSA-44/65/87, jwx-v4 and golang-jwt-pqc) | yes | yes |
 | JWT_Serialization (Compact/JSON formats) | — | yes |
 
 golang-jwt additionally benchmarks HS384/512, RS384/512, PS384/512, ES384/512 in full mode only (short-gated like jwx suites).
@@ -74,6 +84,7 @@ golang-jwt additionally benchmarks HS384/512, RS384/512, PS384/512, ES384/512 in
 |-----------|:---:|:---:|
 | JWS_Sign/{HS256,RS256,ES256} | yes | yes |
 | JWS_Verify/{HS256,RS256,ES256} | yes | yes |
+| JWS_Sign_MLDSA / JWS_Verify_MLDSA (ML-DSA-44/65/87, v4 only) | yes | yes |
 | JWS_Sign_All (HS384/512, RS384/512, PS256/384/512, ES384/512, Ed25519) | — | yes |
 | JWS_Verify_All (same extended set) | — | yes |
 | JWS_Serialization (Compact/JSON parse variants) | — | yes |
@@ -89,7 +100,7 @@ golang-jwt additionally benchmarks HS384/512, RS384/512, PS384/512, ES384/512 in
 | JWE_RoundTrip, JWE_PayloadSizes (1K-1M), JWE_Parallel | — | yes |
 | JWE_Serialization (JSON marshal/unmarshal) | — | yes |
 | JWE_Encrypt_HPKE / JWE_Decrypt_HPKE (HPKE-0/1/2/3/4/7, v4 only) | — | yes |
-| JWE_Encrypt_MLKEM / JWE_Decrypt_MLKEM (ML-KEM-768/1024 +/- AES-KW, v4 only) | — | yes |
+| JWE_Encrypt_MLKEM / JWE_Decrypt_MLKEM (ML-KEM-768/1024 +/- AES-KW, v4 only) | yes | yes |
 
 **JWK** (jwx-v3, jwx-v4, go-jose)
 
@@ -102,7 +113,7 @@ golang-jwt additionally benchmarks HS384/512, RS384/512, PS384/512, ES384/512 in
 
 ### Benchmark infrastructure
 
-Both jwx suites share a `Case` struct in `helpers_test.go` with `Pretest` (setup outside timer), `SkipShort`, and `Test` fields. Key generation helpers: `generateRsaJwk()`, `generateEcdsaJwk()`, `generateSymmetricJwk()`, `generateEd25519Jwk()`.
+Both jwx suites share a `Case` struct in `helpers_test.go` with `Pretest` (setup outside timer), `SkipShort`, and `Test` fields. Key generation helpers: `generateRsaJwk()`, `generateEcdsaJwk()`, `generateSymmetricJwk()`, `generateEd25519Jwk()`. jwx-v4 adds `mldsaCases()`, which returns the three FIPS 204 parameter sets with freshly generated key pairs; `suites/golang-jwt-pqc` has a `mldsaCases()` of its own shaped for that library's context-carried signing key.
 
 v3 uses `jwk.Import(raw)`, v4 uses `jwk.Import[jwk.Key](raw)` (generics).
 
@@ -112,4 +123,4 @@ Single workflow `.github/workflows/benchmarks.yml`: weekly schedule + manual dis
 
 ## Opt-in Algorithms (Build Tags)
 
-`bench_es256k`, `bench_ed448`, `bench_mldsa`, `bench_x448` — referenced in README but no `optin_*_test.go` files exist yet.
+`bench_es256k`, `bench_ed448`, `bench_x448` — referenced in README but no `optin_*_test.go` files exist yet. There is no `bench_mldsa` tag: ML-DSA is a standard, always-on part of the run now that every suite is on Go 1.27.

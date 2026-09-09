@@ -1,6 +1,6 @@
 .PHONY: quick compare full bench run-suite compare-results summary
 
-SUITES     := jwx-v3 jwx-v4 golang-jwt go-jose
+SUITES     := jwx-v3 jwx-v4 golang-jwt golang-jwt-pqc go-jose
 RESULTS    := results
 
 # Flexible mode defaults
@@ -24,7 +24,7 @@ compare:
 	$(MAKE) compare-results
 
 # Everything: all benchmarks including opt-in, count=3
-# Opt-in tags (bench_es256k,bench_ed448,bench_mldsa,bench_x448) can be added
+# Opt-in tags (bench_es256k,bench_ed448,bench_x448) can be added
 # once the corresponding optin_*_test.go files are created in each suite.
 full:
 	$(MAKE) run-suite SUITE="$(SUITES)" BENCH="." COUNT=3 SHORT="" TAGS=""
@@ -33,7 +33,7 @@ full:
 # --- Flexible mode ---
 
 # Run selected suites with custom parameters
-# Usage: make bench SUITE=jwx-v4 BENCH=BenchmarkJWE COUNT=5 TAGS=bench_mldsa SHORT=
+# Usage: make bench SUITE=jwx-v4 BENCH=BenchmarkJWE COUNT=5 TAGS=bench_es256k SHORT=
 bench:
 	$(MAKE) run-suite
 	$(MAKE) compare-results
@@ -44,14 +44,11 @@ run-suite:
 	@mkdir -p $(RESULTS)
 	@for suite in $(SUITE); do \
 		echo "--- Running $$suite ---"; \
-		tags=""; \
+		tags="$(TAGS)"; \
 		export GOEXPERIMENT=""; \
 		if [ "$$suite" = "jwx-v3" ]; then \
 			tags="jwx_goccy"; \
 			if [ -n "$(TAGS)" ]; then tags="$$tags,$(TAGS)"; fi; \
-		elif [ "$$suite" = "jwx-v4" ]; then \
-			export GOEXPERIMENT=jsonv2; \
-			if [ -n "$(TAGS)" ]; then tags="$(TAGS)"; fi; \
 		fi; \
 		tagflag=""; \
 		if [ -n "$$tags" ]; then tagflag="-tags $$tags"; fi; \

@@ -372,3 +372,44 @@ func BenchmarkJWS_Serialization(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkJWS_Sign_MLDSA(b *testing.B) {
+	payload := []byte(`{"iss":"bench","sub":"1234567890","iat":1516239022}`)
+
+	for _, tc := range mldsaCases(b) {
+		withKey := jws.WithKey(tc.Alg, tc.Private)
+		b.Run(tc.Name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, err := jws.Sign(payload, withKey)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkJWS_Verify_MLDSA(b *testing.B) {
+	payload := []byte(`{"iss":"bench","sub":"1234567890","iat":1516239022}`)
+
+	for _, tc := range mldsaCases(b) {
+		signed, err := jws.Sign(payload, jws.WithKey(tc.Alg, tc.Private))
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		withKey := jws.WithKey(tc.Alg, tc.Public)
+		b.Run(tc.Name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, err := jws.Verify(signed, withKey)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
+}

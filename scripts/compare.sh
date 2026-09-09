@@ -10,12 +10,15 @@ if ! command -v benchstat >/dev/null 2>&1; then
 	go install golang.org/x/perf/cmd/benchstat@latest
 fi
 
-# All meaningful pairwise comparisons.
+# All meaningful pairwise comparisons. golang-jwt-pqc is paired only with
+# jwx-v4: those are the two suites that carry ML-DSA benchmarks, and a pair
+# with no shared benchmark names gives benchstat nothing to report.
 comparisons=(
 	"jwx-v3:jwx-v4"
 	"jwx-v3:golang-jwt"
 	"jwx-v3:go-jose"
 	"jwx-v4:golang-jwt"
+	"jwx-v4:golang-jwt-pqc"
 	"jwx-v4:go-jose"
 )
 
