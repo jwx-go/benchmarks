@@ -1,6 +1,6 @@
 module github.com/jwx-go/benchmarks/suites/jwx-v3
 
-go 1.27.0
+go 1.27.3
 
 require github.com/lestrrat-go/jwx/v3 v3.3.0
 

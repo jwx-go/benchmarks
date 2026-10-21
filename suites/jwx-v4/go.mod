@@ -1,6 +1,6 @@
 module github.com/jwx-go/benchmarks/suites/jwx-v4
 
-go 1.27.0
+go 1.27.3
 
 require (
 	github.com/jwx-go/mlkem/v4 v4.0.4
