@@ -1,6 +1,6 @@
 module github.com/jwx-go/benchmarks/suites/golang-jwt-pqc
 
-go 1.27.0
+go 1.27.3
 
 // The published ML-DSA submodule requires its own parent module at v0.0.0, a
 // version that was never tagged, because the upstream repository builds it
