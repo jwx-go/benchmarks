@@ -115,7 +115,7 @@ func BenchmarkJWE_Decrypt(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			obj, err := jose.ParseEncrypted(jweCompactRSAOAEP, []jose.KeyAlgorithm{jose.RSA_OAEP}, []jose.ContentEncryption{jose.A256GCM})
+			obj, err := jose.ParseEncryptedCompact(jweCompactRSAOAEP, []jose.KeyAlgorithm{jose.RSA_OAEP}, []jose.ContentEncryption{jose.A256GCM})
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -130,7 +130,7 @@ func BenchmarkJWE_Decrypt(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			obj, err := jose.ParseEncrypted(jweCompactRSA15, []jose.KeyAlgorithm{jose.RSA1_5}, []jose.ContentEncryption{jose.A128CBC_HS256})
+			obj, err := jose.ParseEncryptedCompact(jweCompactRSA15, []jose.KeyAlgorithm{jose.RSA1_5}, []jose.ContentEncryption{jose.A128CBC_HS256})
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -145,7 +145,7 @@ func BenchmarkJWE_Decrypt(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			obj, err := jose.ParseEncrypted(jweCompactA256KW, []jose.KeyAlgorithm{jose.A256KW}, []jose.ContentEncryption{jose.A256GCM})
+			obj, err := jose.ParseEncryptedCompact(jweCompactA256KW, []jose.KeyAlgorithm{jose.A256KW}, []jose.ContentEncryption{jose.A256GCM})
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -160,7 +160,7 @@ func BenchmarkJWE_Decrypt(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			obj, err := jose.ParseEncrypted(jweCompactA128GCMKW, []jose.KeyAlgorithm{jose.A128GCMKW}, []jose.ContentEncryption{jose.A128GCM})
+			obj, err := jose.ParseEncryptedCompact(jweCompactA128GCMKW, []jose.KeyAlgorithm{jose.A128GCMKW}, []jose.ContentEncryption{jose.A128GCM})
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -175,7 +175,7 @@ func BenchmarkJWE_Decrypt(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			obj, err := jose.ParseEncrypted(jweCompactECDHES, []jose.KeyAlgorithm{jose.ECDH_ES}, []jose.ContentEncryption{jose.A256GCM})
+			obj, err := jose.ParseEncryptedCompact(jweCompactECDHES, []jose.KeyAlgorithm{jose.ECDH_ES}, []jose.ContentEncryption{jose.A256GCM})
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -190,7 +190,7 @@ func BenchmarkJWE_Decrypt(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			obj, err := jose.ParseEncrypted(jweCompactECDHESA256KW, []jose.KeyAlgorithm{jose.ECDH_ES_A256KW}, []jose.ContentEncryption{jose.A256GCM})
+			obj, err := jose.ParseEncryptedCompact(jweCompactECDHESA256KW, []jose.KeyAlgorithm{jose.ECDH_ES_A256KW}, []jose.ContentEncryption{jose.A256GCM})
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -205,7 +205,7 @@ func BenchmarkJWE_Decrypt(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			obj, err := jose.ParseEncrypted(jweCompactDIRECT, []jose.KeyAlgorithm{jose.DIRECT}, []jose.ContentEncryption{jose.A256GCM})
+			obj, err := jose.ParseEncryptedCompact(jweCompactDIRECT, []jose.KeyAlgorithm{jose.DIRECT}, []jose.ContentEncryption{jose.A256GCM})
 			if err != nil {
 				b.Fatal(err)
 			}

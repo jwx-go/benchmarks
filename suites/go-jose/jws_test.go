@@ -131,7 +131,7 @@ func BenchmarkJWS_Verify(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			jws, err := jose.ParseSigned(jwsCompactHS256, []jose.SignatureAlgorithm{jose.HS256})
+			jws, err := jose.ParseSignedCompact(jwsCompactHS256, []jose.SignatureAlgorithm{jose.HS256})
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -146,7 +146,7 @@ func BenchmarkJWS_Verify(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			jws, err := jose.ParseSigned(jwsCompactRS256, []jose.SignatureAlgorithm{jose.RS256})
+			jws, err := jose.ParseSignedCompact(jwsCompactRS256, []jose.SignatureAlgorithm{jose.RS256})
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -161,7 +161,7 @@ func BenchmarkJWS_Verify(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			jws, err := jose.ParseSigned(jwsCompactES256, []jose.SignatureAlgorithm{jose.ES256})
+			jws, err := jose.ParseSignedCompact(jwsCompactES256, []jose.SignatureAlgorithm{jose.ES256})
 			if err != nil {
 				b.Fatal(err)
 			}
